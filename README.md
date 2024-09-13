@@ -10,7 +10,7 @@
 + Authors: Gustavo Silva, Danilo Dutra, Cláudio Evangelista, Matheus Araujo.
 # Work for the Computer Graphics course at the Federal University of Catalão (UFCAT), Goiás
 ```
-This project demonstrates how to create a window using GLFW and perform 3D rendering with the Vulkan API (using the Vulkan SDK provided by LunarG). The code includes all necessary steps to render a rotating 3D cube, making it a comprehensive and easy-to-understand example of Vulkan-based rendering.
+This project demonstrates how to create a window using GLFW and perform 3D rendering with the Vulkan API (using the Vulkan SDK provided by LunarG) written in python language. The code includes all the steps needed to render a rotating 3D cube, making it a comprehensive and easy-to-understand example of Vulkan-based rendering.
 
 ## 🌟 Features 
 
