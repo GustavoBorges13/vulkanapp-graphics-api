@@ -76,7 +76,7 @@ You can also use Docker to set up the project in a containerized environment.
 
 2. Run the Docker container:
     ```bash
-    docker run -it --name ubuntu_vulkan_api -v $(pwd):/usr/app/src vulkanapp-graphics-api
+    docker run -it python_vulkan_api
     ```
 
 For detailed Docker commands, see the [docker-commands.md](docker-commands.md) file.
