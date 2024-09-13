@@ -18,7 +18,8 @@ RUN python3 -m venv /venv
 RUN /venv/bin/pip install --upgrade pip
 
 # Instale as bibliotecas Python necessárias no ambiente virtual
-RUN /venv/bin/pip install glfw vulkan
+COPY requirements.txt requirements.txt
+RUN /venv/bin/pip install -r requirements.txt
 
 # Adicione o repositório do Vulkan SDK e instale-o
 RUN wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add - && \
