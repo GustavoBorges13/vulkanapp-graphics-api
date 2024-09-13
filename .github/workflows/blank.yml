@@ -1,0 +1,24 @@
+name: CI
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      
+      - name: Scripts
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+        run: |
+          docker build -t app ./
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker tag app $DOCKER_USER/vulkan_app
+          docker push $DOCKER_USER/vulkan_app
+         
