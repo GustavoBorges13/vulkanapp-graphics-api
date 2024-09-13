@@ -24,7 +24,14 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
 
 - **Python 3.x**: Ensure you have Python 3 installed.
 - **Vulkan SDK**: Download and install the Vulkan SDK from [LunarG](https://vulkan.lunarg.com/sdk/home).
-- **GLFW**: Installed via Python's package manager `pip`.
+- **GLFW**: Installed via Python's package manager `pip`:
+  ```bash
+  pip install glfw
+  ```
+- **Vulkan Python Bindings**: Install the Vulkan API bindings for Python via `pip` with the command:
+  ```bash
+  pip install vulkan
+  ```
 - **Docker** (optional): You can run this project using Docker for isolated development environments.
 
 ## Installation
@@ -51,12 +58,18 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
     ```bash
     python main.py
     ```
+### Docker Setup from Docker Hub
 
-### Docker Setup
+- If you are using the image from Docker Hub, run the container with:
+    ```bash
+    docker run -it --rm --name my_vulkan_app gustavoborges13/vulkan_app
+    ```
+
+### Docker Setup from Local Build
 
 You can also use Docker to set up the project in a containerized environment.
 
-1. Build the Docker image:
+1. To build the Docker image, use the following command:
     ```bash
     docker build -t vulkanapp-graphics-api .
     ```
