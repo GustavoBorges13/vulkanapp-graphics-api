@@ -8,7 +8,6 @@ def supported(extensions, layers, debug):
         ExtensionProperties( std::array<char, VK_MAX_EXTENSION_NAME_SIZE> const & extensionName_ = {},
                            uint32_t                                             specVersion_ = {} )
     """
-        
     #verifica o suporte das extensões
     supportedExtensions = [extension.extensionName for extension in vkEnumerateInstanceExtensionProperties(None)]
 
@@ -53,9 +52,7 @@ def make_instance(debug, applicationName):
     """
         Uma instância armazena todas as informações de estado por aplicação, é um identificador Vulkan
         (Um número inteiro opaco ou um valor de ponteiro utilizado para se referir a um objeto Vulkan)
-    """
-
-    """
+        
         Podemos analisar o sistema e verificar até que versão é compatível,
         a partir de vulkan 1.1
         
