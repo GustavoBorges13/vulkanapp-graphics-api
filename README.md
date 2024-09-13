@@ -1,5 +1,15 @@
 # VulkanApp Graphics API
+[![NPM](https://img.shields.io/npm/l/react)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/blob/main/LICENSE) 
+[![Latest Actual-Development Version](https://img.shields.io/badge/version-v1.0.0-yellow)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
+[![Latest Stable Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
+[![GitHub last commit](https://img.shields.io/github/last-commit/GustavoBorges13/vulkanapp-graphics-api)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/commits/main)
+<!---[![Build Status](https://app.travis-ci.com/GustavoBorges13/RunBlocker.svg?branch=main)](https://app.travis-ci.com/GustavoBorges13/RunBlocker)-->
 
+```diff
+- In development [2024.2]!
++ Authors: Gustavo Silva, Danilo Dutra, Cláudio Evangelista, Matheus Araujo.
+# Work for the Computer Graphics course at the Federal University of Catalão (UFCAT), Goiás
+```
 This project demonstrates how to create a window using GLFW and perform 3D rendering with the Vulkan API (using the Vulkan SDK provided by LunarG). The code includes all necessary steps to render a rotating 3D cube, making it a comprehensive and easy-to-understand example of Vulkan-based rendering.
 
 ## Features
