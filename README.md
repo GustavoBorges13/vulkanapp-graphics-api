@@ -12,7 +12,7 @@
 ```
 This project demonstrates how to create a window using GLFW and perform 3D rendering with the Vulkan API (using the Vulkan SDK provided by LunarG). The code includes all necessary steps to render a rotating 3D cube, making it a comprehensive and easy-to-understand example of Vulkan-based rendering.
 
-## Features
+## 🌟 Features 
 
 - **GLFW Window Creation**: Easily set up a window for rendering with Vulkan.
 - **Vulkan Integration**: Uses the Vulkan API for efficient 3D rendering.
@@ -20,7 +20,7 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
 - **Easy to Understand**: The code is structured and commented for readability and ease of understanding.
 - **Python Implementation**: Developed entirely in Python with Vulkan bindings.
 
-## Requirements
+## 📋 Requirements 
 
 - **Python 3.x**: Ensure you have Python 3 installed.
 - **Vulkan SDK**: Download and install the Vulkan SDK from [LunarG](https://vulkan.lunarg.com/sdk/home).
@@ -34,9 +34,9 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
   ```
 - **Docker** (optional): You can run this project using Docker for isolated development environments.
 
-## Installation
+## 🔧 Installation 
 
-### Local Setup
+### 🛠️ Local Setup 
 
 1. Clone the repository:
     ```bash
@@ -58,14 +58,14 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
     ```bash
     python main.py
     ```
-### Docker Setup from Docker Hub
+### 🐳 Docker Setup from Docker Hub 
 
 - If you are using the image from Docker Hub, run the container with:
     ```bash
     docker run -it --rm --name my_vulkan_app gustavoborges13/vulkan_app
     ```
 
-### Docker Setup from Local Build
+### 🔄 Docker Setup from Local Build 
 
 You can also use Docker to set up the project in a containerized environment.
 
@@ -81,11 +81,11 @@ You can also use Docker to set up the project in a containerized environment.
 
 For detailed Docker commands, see the [docker-commands.md](docker-commands.md) file.
 
-## Usage
+## 📖 Usage 
 
 Once the application is running, a window will open displaying a 3D cube. The cube will rotate indefinitely, demonstrating basic 3D rendering using the Vulkan API.
 
-## Project Structure
+## 🗂️ Project Structure 
 
 ```bash
 ├── Dockerfile                # Docker configuration
@@ -97,3 +97,9 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 ├── main.py                   # Main script to launch the rendering
 ├── requirements.txt          # Python dependencies
 └── __pycache__               # Compiled Python files
+```
+
+
+## 🚀 Getting Started with Vulkan API: Introduction and Basics 
+Dive into the world of Vulkan API! Whether you're new to graphics programming or looking to expand your skills, our guide provides a clear and engaging introduction to Vulkan's core concepts. Start building high-performance graphics applications today!
+[Explore the Wiki](https://github.com/GustavoBorges13/vulkanapp-graphics-api/wiki)
