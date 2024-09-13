@@ -1,4 +1,4 @@
-name: CI
+name: Python and Vulkan application
 on:
   push:
     branches: [ "main" ]
