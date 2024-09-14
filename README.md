@@ -42,7 +42,7 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your-username/vulkanapp-graphics-api.git
+    git clone https://github.com/GustavoBorges13/vulkanapp-graphics-api.git
     cd vulkanapp-graphics-api
     ```
 
@@ -101,7 +101,7 @@ The build will be performed by ./Dockerfile.
 
 1. Clone the repository:
 ```bash
-    git clone https://github.com/your-username/vulkanapp-graphics-api.git
+    git clone https://github.com/GustavoBorges13/vulkanapp-graphics-api.git
     cd vulkanapp-graphics-api
 ```
 2. To build the Docker image, use the following command:
@@ -124,7 +124,7 @@ The build will be performed by ./docker-compose.yml.
 
 1. Clone the repository:
 ```bash
-    git clone https://github.com/your-username/vulkanapp-graphics-api.git
+    git clone https://github.com/GustavoBorges13/vulkanapp-graphics-api.git
     cd vulkanapp-graphics-api
 ```
 2. To build the Docker image and run, use the following command:
