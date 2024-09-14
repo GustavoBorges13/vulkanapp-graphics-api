@@ -33,7 +33,7 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
   ```bash
   pip install vulkan
   ```
-- **Docker** (optional): You can run this project using Docker for isolated development environments. For more details, see the [Docker Setup from Docker Hub](#docker-setup-from-docker-hub) or [Docker Setup from Local Build](#docker-setup-from-local-build).<br><br>
+- **Docker** (optional): You can run this project using Docker for isolated development environments. For more details, see the [Docker Setup from Docker Hub](#-docker-setup-from-docker-hub) or [Docker Setup from Local Build](#-docker-setup-from-local-build).<br><br>
 
 
 ## 🔧 Installation 
