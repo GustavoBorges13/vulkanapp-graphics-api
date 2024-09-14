@@ -2,6 +2,7 @@ from config import *
 import instance
 import logging
 import device
+import time
 
 class Engine:
 
@@ -81,10 +82,11 @@ class Engine:
         vkDestroyInstance(self.instance, None)
 
 	    #encerrar o glfw
+        time.sleep(5)
         glfw.terminate()
 
 if __name__ == "__main__":
 
 	graphicsEngine = Engine()
-
+    
 	graphicsEngine.close()
