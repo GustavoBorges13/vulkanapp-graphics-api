@@ -71,23 +71,94 @@ This project demonstrates how to create a window using GLFW and perform 3D rende
 
 ## 🐳 Docker Setup from Docker Hub 
 
-If you are using the image from Docker Hub, run the container with:
+To run graphical applications in Docker, you'll need to configure X11 display support based on your operating system.
+
+### General Notes
+Ensure Docker is installed and configured on your machine.
+
+### For Windows Users
+
+If you need to display graphical applications from Docker on Windows, follow these steps:
+
+1. Download and Install X Server:
+
+- Install VcXsrv, a Windows X Server tool. This will set up Xming and Xlaunch.
+  
+2. Configure Xlaunch:
+
+1. Launch Xlaunch after installation.
+2. In the "Select Display Settings" screen, keep "Multiple windows" checked.
+3. In the "Select how to start clients" screen, choose "Start no client".
+4. In the "Extra settings" screen, check "Disable access control".
+5. Click "Finish" to complete the setup.
+
+3. Run the Docker Container:
   ```bash
-    docker run -it --rm --name my_vulkan_app --gpus all -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix gustavoborges13/vulkan_app
+  docker run -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 gustavoborges13/vulkan_app
+
+  # If you have an NVIDIA GPU (optional), use:
+  docker run --gpus all -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 gustavoborges13/vulkan_app
   ```
-This command configures the container to use the GPU and connect to the X Server on your host machine, allowing graphical applications to be displayed.
 
-Observations:
-Remember that you need to have docker installed and configured on your machine.
+Xlaunch will run in the background, waiting for X11 applications to connect and use display :0.
 
-- Note for Windows Users:
-> If you are running Docker on Windows and need to display graphical applications, you must install an X11 server like Xming or VcXsrv. Ensure that the X11 server is running before starting the Docker container.
+### For Linux Users
 
-- Note for macOS Users
-> If you are running Docker on macOS, you will need to install XQuartz to display graphical applications.
+To display graphical applications from Docker on Linux, follow these steps:
 
-- Note for Linux Users
-> If you are running Docker on Linux, ensure that your X11 server is running to display graphical applications.
+1. Install X Server:
+
+- Most Linux distributions come with an X server installed. If not, install it using your package manager:
+  ```bash
+  sudo apt-get install xorg
+  ```
+
+2. Configure X Server for Docker:
+
+- Allow Docker containers to access the X server:
+  ```bash
+  xhost +local:docker
+  
+  # To revoke access later (optional):
+  xhost -local:docker
+  ```
+
+3. Run the Docker Container:
+  ```bash
+  docker run -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix gustavoborges13/vulkan_app
+
+  # If you have an NVIDIA GPU (optional), use:
+  docker run --gpus all -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix gustavoborges13/vulkan_app
+  ```
+
+This setup will allow Docker containers to use the X11 display server on your Linux system.
+
+### For macOS Users
+
+To display graphical applications from Docker on macOS, follow these steps:
+
+1. Install X Server:
+
+- Download and install XQuartz from the official website.
+
+2. Configure XQuartz:
+
+1. Open XQuartz after installation.
+2. Go to XQuartz > Preferences.
+3. In the "Security" tab, check "Allow connections from network clients".
+4. Restart XQuartz to apply the changes.
+
+3. Run the Docker Container:
+  
+- Run the Docker container:
+  ```bash
+  docker run -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 gustavoborges13/vulkan_app
+  
+  # If you have an NVIDIA GPU (optional), use:
+  docker run --gpus all -it --rm --name my_vulkan_app -e DISPLAY=host.docker.internal:0 gustavoborges13/vulkan_app
+  ```
+
+XQuartz will provide the display server necessary for running X11 applications.
 
 <br>
 
@@ -110,7 +181,10 @@ The build will be performed by ./Dockerfile.
 ```
 3. Run the Docker container:
 ```bash
-    docker run -it --rm --name my_vulkan_app --gpus all -e DISPLAY=host.docker.internal:0 -v /tmp/.X11-unix:/tmp/.X11-unix vulkanapp-graphics-api
+    docker run -it --rm -e DISPLAY=host.docker.internal:0 vulkanapp-graphics-api
+
+    # If you have an NVIDIA GPU (optional), use:
+    docker run --gpus all -it --rm -e DISPLAY=host.docker.internal:0 vulkanapp-graphics-api
 ```
 This command ensures that the container has access to the GPU and connects to the X Server on your host machine for graphical output.
 
@@ -121,6 +195,7 @@ This command ensures that the container has access to the GPU and connects to th
 
 The build will be performed by ./docker-compose.yml.
 
+> It's worth remembering that the observations made earlier in the from docker hub procedure apply here too. Have the X server configured and docker installed for the application window to appear.
 
 1. Clone the repository:
 ```bash
@@ -129,10 +204,8 @@ The build will be performed by ./docker-compose.yml.
 ```
 2. To build the Docker image and run, use the following command:
 ```bash
-    docker-compose up --build
+    docker-compose up
 ```
-
-> It's worth remembering that the observations made earlier in the from docker hub procedure apply here too. Have the X server configured and docker installed.
 
 For detailed Docker commands, see the [docker-commands.md](docker-commands.md) file.<br><br>
 
