@@ -37,8 +37,5 @@ RUN /usr/app/venv/bin/pip install -r requirements.txt
 # Copiar o código da aplicação para o diretório de trabalho no container
 COPY . .
 
-# Configurar a variável DISPLAY para Linux e fallback para Windows
-ENV DISPLAY=${DISPLAY:-host.docker.internal:0}
-
 # Comando padrão para iniciar a aplicação
 CMD ["/usr/app/venv/bin/python3", "./main.py"]
