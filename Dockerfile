@@ -7,16 +7,19 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     libvulkan-dev \
-    vulkan-utils \
     wget \
-    libx11-xcb-dev \
+    libglfw3 \
+    libglfw3-dev \
     libx11-dev \
-    mesa-utils \
+    libxcursor-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Baixar e instalar o Vulkan SDK diretamente dos repositórios da LunarG
 RUN wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | apt-key add - && \
-    wget -qO /etc/apt/sources.list.d/lunarg-vulkan.list https://packages.lunarg.com/vulkan/lunarg-vulkan.list && \
+    wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.290-noble.list https://packages.lunarg.com/vulkan/1.3.290/lunarg-vulkan-1.3.290-noble.list && \
     apt update && \
     apt install -y vulkan-sdk
 
