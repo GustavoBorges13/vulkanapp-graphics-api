@@ -2,7 +2,9 @@ from config import *
 import shaders
  
 class InputBundle:
-
+    """
+    Classe de entrada para encapsular os parâmetros necessários para criar um pipeline gráfico.
+    """
     def __init__(self, device, 
     swapchainImageFormat, swapchainExtent, 
     vertexFilepath, fragmentFilepath
@@ -15,7 +17,9 @@ class InputBundle:
         self.fragmentFilepath = fragmentFilepath
 
 class OuputBundle:
-
+    """
+    Classe de saída para encapsular os recursos gerados pelo pipeline gráfico: layout, render pass e o próprio pipeline.
+    """
     def __init__(self, pipelineLayout, renderPass, pipeline):
 
         self.pipelineLayout = pipelineLayout
@@ -23,8 +27,9 @@ class OuputBundle:
         self.pipeline = pipeline
 
 """
-renderpass -> uma especie de descricao dos varios recursos que estao anexados a
-uma execucao completa do pipeline, incluindo todos os subpass
+A função create_render_pass define uma render pass no Vulkan.
+Ela descreve os attachments (recursos de buffer, como a cor) e configura os estados de carregamento e armazenamento 
+para cada subpass, além de como os dados devem ser tratados ao início e final da renderização.
 """
 def create_render_pass(device, swapchainImageFormat):
     
@@ -42,18 +47,20 @@ def create_render_pass(device, swapchainImageFormat):
         finalLayout=VK_IMAGE_LAYOUT_PRESENT_SRC_KHR 
     )
 
-    #similar ao opengl
+    # Referência para o attachment que será usado no subpass como color attachment
     colorAttachmentRef = VkAttachmentReference(
         attachment=0,
         layout=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     )
 
+    # Descreve o subpass, aqui um único subpass de renderização de cores
     subpass = VkSubpassDescription(
         pipelineBindPoint=VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount=1,
         pColorAttachments=colorAttachmentRef
     )
 
+    # Criação da render pass
     renderPassInfo = VkRenderPassCreateInfo(
         sType=VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         attachmentCount=1,
@@ -64,10 +71,9 @@ def create_render_pass(device, swapchainImageFormat):
 
     return vkCreateRenderPass(device, renderPassInfo, None)
 
-"""Pipeline layout, descreve quais push constants e conjuntos de descritores (descriptions set, set layouts) serao
-utilizados com um determinado pipeline.
-
-Em nosso exemplo, nao estamos pegando nenhum dado (por isso = 0) mas ainda temos que criar o layout de pipeline.
+"""
+A função create_pipeline_layout cria o layout do pipeline.
+Aqui estamos criando um pipeline simples, sem push constants ou descritores.
 """
 def create_pipeline_layout(device):
 
@@ -83,20 +89,20 @@ def create_pipeline_layout(device):
 
 
 """
-Primeiro -> vertex input, como vamos receber a entrada no pipeline, que tipo de ligacoes e atributos
-Segundo -> vertex shader, qual estagio estamos criando, onde está o codigo compilado e a entrada entrypoint
+A função create_graphics_pipeline cria um pipeline gráfico completo,
+incluindo shaders, estados fixos (como a viewport, rasterizador e blending),
+e associa o pipeline ao layout e à render pass.
 """
 def create_graphics_pipeline(inputBundle, debug):
 
-    #estágio de entrada do vértice
-    #Nesse estágio, nenhum dado de vértice está sendo obtido.
+    # Sem descrição de entrada de vértices, pois não estamos passando dados de vértices (apenas um triângulo por exemplo)
     vertexInputInfo = VkPipelineVertexInputStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         vertexBindingDescriptionCount=0,
         vertexAttributeDescriptionCount=0
     )
 
-    #O sombreador de vértice transforma os vértices adequadamente
+    # Carregar e configurar o shader de vértices
     if (debug):
         print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.vertexFilepath}{RESET}")
     vertexShaderModule = shaders.create_shader_module(inputBundle.device, inputBundle.vertexFilepath)
@@ -107,16 +113,14 @@ def create_graphics_pipeline(inputBundle, debug):
             pName="main"
         )
 
-    #topologia de criacao de shapes -> para triangulo 2d usar essa
-    #Assembly entrada, qual método de construção usar com vértices
+    # Configurar a topologia de entrada de vértices, aqui desenhando triângulos!!
     inputAssembly = VkPipelineInputAssemblyStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         primitiveRestartEnable=VK_FALSE #permite o “desmembramento” de topologias de faixas
     )
 
-    #transformação da imagem para o framebuffer: stretch
-    #janela de visualizacao
+    # Definir a área de visualização (viewport) e o recorte (scissor)
     viewport = VkViewport(
         x=0,
         y=0,
@@ -125,14 +129,13 @@ def create_graphics_pipeline(inputBundle, debug):
         minDepth=0.0,
         maxDepth=1.0
     )
-
     #transformação de imagem para framebuffer: recorte
     scissor = VkRect2D(
         offset=[0,0],
         extent=inputBundle.swapchainExtent
     )
 
-    #essas duas transformações se combinam para definir o estado da janela de visualização
+    # Combinação da viewport e do scissor
     viewportState = VkPipelineViewportStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         viewportCount=1,
@@ -141,7 +144,7 @@ def create_graphics_pipeline(inputBundle, debug):
         pScissors=scissor
     )
 
-    #rasterizador interpola entre os vértices para produzir fragmentos e também realiza testes de visibilidade
+    # Configurações do rasterizador: define como os fragmentos serão gerados a partir dos vértices
     # -> preencher shapes
     raterizer = VkPipelineRasterizationStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -154,14 +157,14 @@ def create_graphics_pipeline(inputBundle, debug):
         depthBiasEnable=VK_FALSE #transformação opcional em valores de profundidade
     )
 
-    #parâmetros de multisampling
+    # Configurações de multisampling (desativado neste caso)
     multisampling = VkPipelineMultisampleStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         sampleShadingEnable=VK_FALSE,
         rasterizationSamples=VK_SAMPLE_COUNT_1_BIT
     )
 
-    #O sombreador de fragmentos pega os fragmentos do rasterizador e os colore apropriadamente
+    #O sombreador de fragmentos carrega os fragmentos do rasterizador e os colore apropriadamente
     if (debug):
         print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.fragmentFilepath}{RESET}")
     fragmentShaderModule = shaders.create_shader_module(inputBundle.device, inputBundle.fragmentFilepath)
@@ -175,21 +178,24 @@ def create_graphics_pipeline(inputBundle, debug):
     shaderStages = [vertexShaderStageInfo, fragmentShaderStageInfo]
 
     #combinação de cores, pegue a saída do fragment shader e incorpore-a ao pixel existente, se ele tiver sido definido.
+    # Configurações de blending para a cor (desativado neste caso)
     colorBlendAttachment = VkPipelineColorBlendAttachmentState(
         colorWriteMask=VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-        blendEnable=VK_FALSE #Função blend
+        blendEnable=VK_FALSE #função sem blend
     )
     colorBlending = VkPipelineColorBlendStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        logicOpEnable=VK_FALSE, #operações lógicas
+        logicOpEnable=VK_FALSE, #sem operações lógicas
         attachmentCount=1,
         pAttachments=colorBlendAttachment,
         blendConstants=[0.0, 0.0, 0.0, 0.0]
     )
 
+    # Criar o layout do pipeline e a render pass
     pipelineLayout = create_pipeline_layout(inputBundle.device)
     renderPass = create_render_pass(inputBundle.device, inputBundle.swapchainImageFormat)
 
+    # Criar o pipeline gráfico
     pipelineInfo = VkGraphicsPipelineCreateInfo(
         sType=VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         stageCount=2,

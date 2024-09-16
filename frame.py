@@ -6,3 +6,5 @@ class SwapChainFrame:
         
         self.image = None
         self.image_view = None
+        self.framebuffer = None
+        self.commandbuffer = None
