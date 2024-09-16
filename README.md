@@ -1,7 +1,7 @@
 # VulkanApp Graphics API
 [![NPM](https://img.shields.io/npm/l/react)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/blob/main/LICENSE) 
-[![Latest Actual-Development Version](https://img.shields.io/badge/version-v1.0.0-yellow)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
-[![Latest Stable Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
+[![Latest Actual-Development Version](https://img.shields.io/badge/version-v1.2.0-yellow)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
+[![Latest Stable Version](https://img.shields.io/badge/version-v1.2.0-blue)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/releases)
 [![GitHub last commit](https://img.shields.io/github/last-commit/GustavoBorges13/vulkanapp-graphics-api)](https://github.com/GustavoBorges13/vulkanapp-graphics-api/commits/main)
 <!---[![Build Status](https://app.travis-ci.com/GustavoBorges13/RunBlocker.svg?branch=main)](https://app.travis-ci.com/GustavoBorges13/RunBlocker)-->
 
