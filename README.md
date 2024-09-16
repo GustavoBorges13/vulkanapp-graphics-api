@@ -229,10 +229,10 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 ```bash
 .
 ├── .gitignore                  # Git ignore file
-├── app.py                      # Main application script
-├── colors.py                   # Color handling for rendering
+├── app.py                      # Window glfw prepare
+├── colors.py                   # Color handling for print debugMode
 ├── commands.py                 # Command handling and execution
-├── config.py                   # Vulkan configuration
+├── config.py                   # Python imports general
 ├── device.py                   # Device selection and management
 ├── docker-commands.md          # Docker commands and setup instructions
 ├── docker-compose.yml          # Docker Compose configuration
@@ -242,8 +242,8 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 ├── framebuffer.py              # Framebuffer management
 ├── instance.py                 # Vulkan instance creation
 ├── LICENSE                     # License file for the project
-├── logging.py                  # Logging utilities
-├── main.py                     # Main script to launch the rendering
+├── logging.py                  # Logging utilities - Validation Layers
+├── main.py                     # Main application to launch program
 ├── pipeline.py                 # Pipeline configuration and management
 ├── queue_families.py           # Queue families management for Vulkan
 ├── README.md                   # Project documentation and overview
@@ -254,7 +254,7 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 │
 ├── .github
 │   └── workflows
-│       └── Docker.yml          # GitHub Actions workflow for Docker
+│       └── Docker.yml          # GitHub Actions automatic workflow for Docker
 │
 ├── shaders                     # Shader files for the application
 │   ├── compile_shaders.bat     # Batch script to compile shaders
