@@ -1,4 +1,8 @@
 from config import *
+import logging
+import queue_families  
+
+validationLayers = ["VK_LAYER_KHRONOS_validation"]
 
 """
     O Vulkan separa o conceito de dispositivos físicos e lógicos. 
@@ -10,55 +14,6 @@ from config import *
     Um dispositivo lógico representa uma instância dessa implementação 
     com o seu próprio estado e recursos independentes de outros dispositivos lógicos.
 """
-class QueueFamilyIndices:
-
-    def __init__(self):
-        self.graphicsFamily = None
-        self.presentFamily = None
-    
-    def is_complete(self):
-        
-        return not(self.graphicsFamily is None or self.presentFamily is None)
-
-def log_device_properties(device):
-    
-    """
-        void vkGetPhysicalDeviceProperties(
-            VkPhysicalDevice                            physicalDevice,
-            VkPhysicalDeviceProperties*                 pProperties);
-
-    """
-
-    properties = vkGetPhysicalDeviceProperties(device)
-
-    """
-        typedef struct VkPhysicalDeviceProperties {
-            uint32_t                            apiVersion;
-            uint32_t                            driverVersion;
-            uint32_t                            vendorID;
-            uint32_t                            deviceID;
-            VkPhysicalDeviceType                deviceType;
-            char                                deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
-            uint8_t                             pipelineCacheUUID[VK_UUID_SIZE];
-            VkPhysicalDeviceLimits              limits;
-            VkPhysicalDeviceSparseProperties    sparseProperties;
-            } VkPhysicalDeviceProperties;
-    """
-
-    print(f"{OKGREEN}Nome do dispositivo: {properties.deviceName}")
-
-    print("Tipo de dispositivo: ",end="")
-
-    if properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU:
-        print(f"CPU{RESET}")
-    elif properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-        print(f"Discrete GPU{RESET}")
-    elif properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-        print(f"Integrated GPU{RESET}")
-    elif properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-        print(f"Virtual GPU{RESET}")
-    else:
-        print(f"Outro{RESET}")
 
 def check_device_extension_support(device, requestedExtensions, debug):
 
@@ -136,71 +91,11 @@ def choose_physical_device(instance, debug):
     # verificar se é possível encontrar um dispositivo adequado
     for device in availableDevices:
         if debug:
-            log_device_properties(device)
+            logging.log_device_properties(device)
         if is_suitable(device, debug):
             return device
 
     return None
-
-def find_queue_families(device, instance, surface, debug):
-
-        indices = QueueFamilyIndices()
-        
-        surfaceSupport = vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceSupportKHR")
-        
-        queuFamilies = vkGetPhysicalDeviceQueueFamilyProperties(device)
-
-
-        if debug:
-            print(f"{WARNING}Há {len(queuFamilies)} famílias de filas disponíveis no sistema.{RESET}")
-
-        # Verificacao bit a bit para verificar se a fila suporta nossas operacoes graficas
-        for i, queueFamily in enumerate(queuFamilies):
-
-            """
-            // Provided by VK_VERSION_1_0
-                typedef struct VkQueueFamilyProperties {
-                VkQueueFlags    queueFlags;
-                uint32_t        queueCount;
-                uint32_t        timestampValidBits;
-                VkExtent3D      minImageTransferGranularity;
-                } VkQueueFamilyProperties;
-
-            // Provided by VK_VERSION_1_0
-            typedef enum VkQueueFlagBits {
-                VK_QUEUE_GRAPHICS_BIT = 0x00000001,
-                VK_QUEUE_COMPUTE_BIT = 0x00000002,
-                VK_QUEUE_TRANSFER_BIT = 0x00000004,
-                VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
-                // Provided by VK_VERSION_1_1
-                VK_QUEUE_PROTECTED_BIT = 0x00000010,
-            } VkQueueFlagBits;
-
-            As famílias de filas no Vulkan são categorizadas por tipos de operações que suportam, como:
-            - Gráficos: Para renderização gráfica.
-            - Computação: Para cálculos gerais em GPU, sem necessariamente envolver gráficos.
-            - Transferência de dados: Para movimentar dados entre a memória da CPU e GPU.
-            - Memória esparsa: Para gerenciar memória de maneira otimizada, como em alocação dinâmica.
-            - Memória protegida: Para operações que envolvem o uso de memória protegida, garantindo segurança e isolamento de dados sensíveis dentro da GPU.
-
-            """
-
-            if queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT:
-                indices.graphicsFamily = i
-
-                if debug:
-                    print(f"{OKGREEN}A família de filas {i} é adequada para gráficos.{RESET}")
-
-            if surfaceSupport(device, i, surface):
-                indices.presentFamily = i
-
-                if debug:
-                    print(f"{OKGREEN}A família de filas {i} é adequada para apresentar.{RESET}")
-
-            if indices.is_complete():
-                break
-
-        return indices
 
 def create_logical_device(physicalDevice, instance, surface, debug):
 
@@ -213,13 +108,12 @@ def create_logical_device(physicalDevice, instance, surface, debug):
         portanto, as informações de criação de fila devem ser passadas em
     """
 
-    indices = find_queue_families(physicalDevice, instance, surface, debug)
+    indices = queue_families.find_queue_families(physicalDevice, instance, surface, debug)
     uniqueIndices = [indices.graphicsFamily,]
     if indices.graphicsFamily != indices.presentFamily:
             uniqueIndices.append(indices.presentFamily)
 
     queueCreateInfo = []
-
     for queueFamilyIndex in uniqueIndices:
         queueCreateInfo.append(
             VkDeviceQueueCreateInfo(
@@ -237,12 +131,17 @@ def create_logical_device(physicalDevice, instance, surface, debug):
 
     enabledLayers = []
     if debug:
-        enabledLayers.append("VK_LAYER_KHRONOS_validation")
+        enabledLayers.extend(validationLayers)
+
+    deviceExtensions = [
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    ]
 
     createInfo = VkDeviceCreateInfo(
         queueCreateInfoCount = len(queueCreateInfo), 
         pQueueCreateInfos = queueCreateInfo,
-        enabledExtensionCount = 0,
+        enabledExtensionCount = len(deviceExtensions),
+        ppEnabledExtensionNames= deviceExtensions,
         pEnabledFeatures = [devicesFeatures,],
         enabledLayerCount = len(enabledLayers), 
         ppEnabledLayerNames = enabledLayers
@@ -258,7 +157,7 @@ def create_logical_device(physicalDevice, instance, surface, debug):
    
 def get_queues(physicalDevice, logicalDevice, instance, surface, debug):
 
-    indices = find_queue_families(physicalDevice, instance, surface, debug)
+    indices = queue_families.find_queue_families(physicalDevice, instance, surface, debug)
     return [
         vkGetDeviceQueue(
             device = logicalDevice,
@@ -271,3 +170,4 @@ def get_queues(physicalDevice, logicalDevice, instance, surface, debug):
             queueIndex = 0
         ),
     ]
+

@@ -2,7 +2,9 @@ from config import *
 import instance
 import logging
 import device
-import time
+import swapchain
+import frame
+import pipeline
 
 # https://registry.khronos.org/vulkan/specs/1.3/html/ documentacao vulkan
 
@@ -23,6 +25,7 @@ class Engine:
         self.build_gflw_window()
         self.make_instance()
         self.make_device()
+        self.make_pipeline()
 
     def build_gflw_window(self):
 
@@ -65,7 +68,7 @@ class Engine:
                 print(f"{FAIL}Falha ao abstrair a superfície do glfw para o Vulkan{RESET}")
         elif self.debugMode:
             print(f"{OKGREEN}Sucesso na abstração da superfície do glfw para o Vulkan{RESET}")
-        
+         
         self.surface = c_style_surface[0]
         
     def make_device(self):
@@ -80,30 +83,61 @@ class Engine:
             self.physicalDevice, self.instance, self.surface, self.debugMode)
 
         #obter fila de gráficos, para que possamos fazer o trabalho com gráficos
-        (self.graphicsQueue, self.presentQueue) = device.get_queues(
+        queues = device.get_queues(
             physicalDevice = self.physicalDevice, 
             logicalDevice = self.device, 
             instance = self.instance, 
             surface = self.surface,
             debug = self.debugMode
         )
+        self.graphicsQueue = queues[0]
+        self.presentQueue = queues[1]
+
+        #device.query_swapchain_support(self.instance, self.physicalDevice, self.surface, True)
+        bundle = swapchain.create_swapchain(
+            self.instance, self.device, self.physicalDevice, self.surface,
+            self.width, self.height, self.debugMode
+        )
+
+        self.swapchain = bundle.swapchain
+        self.swapchainFrames = bundle.frames
+        self.swapchainFormat = bundle.format
+        self.swapchainExtent = bundle.extent
+
+    def make_pipeline(self):
+
+        inputBundle = pipeline.InputBundle(
+            device = self.device,
+            swapchainImageFormat = self.swapchainFormat,
+            swapchainExtent = self.swapchainExtent,
+            vertexFilepath = "shaders/vert.spv",
+            fragmentFilepath = "shaders/frag.spv"
+        )
+
+        outputBundle = pipeline.create_graphics_pipeline(inputBundle, self.debugMode)
+
+        self.pipelineLayout = outputBundle.pipelineLayout
+        self.renderpass = outputBundle.renderPass
+        self.pipeline = outputBundle.pipeline        
 
     def close(self):
 
         if self.debugMode:
             print(f"{HEADER}\nAté logo!\n{RESET}")
-        
-        vkDestroyDevice(
-            device = self.device, 
-            pAllocator = None
-        )
+
+        vkDestroyPipeline(self.device, self.pipeline, None)
+        vkDestroyPipelineLayout(self.device, self.pipelineLayout, None)
+        vkDestroyRenderPass(self.device, self.renderpass, None)
+
+        for frame in self.swapchainFrames:
+            vkDestroyImageView(device = self.device, imageView = frame.image_view, pAllocator = None)
+
+        destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
+        destructionFunction(self.device, self.swapchain, None)
+        vkDestroyDevice(device = self.device, pAllocator = None)
 
         destructionFunction = vkGetInstanceProcAddr(self.instance, 'vkDestroySurfaceKHR')
-        destructionFunction(
-            instance = self.instance, 
-            surface = self.surface, 
-            pAllocator = None
-        )
+        destructionFunction(instance = self.instance, surface = self.surface, pAllocator = None)
 
         if self.debugMode:
             #função de destruição de busca
@@ -116,11 +150,7 @@ class Engine:
                     ,pAllocator
                 ,):
             """
-            destructionFunction(
-                self.instance, 
-                self.debugMessenger, 
-                None
-            )
+            destructionFunction(self.instance, self.debugMessenger, None)
 
         """
             from _vulkan.py:
@@ -130,10 +160,7 @@ class Engine:
                 pAllocator,
             )
         """
-        vkDestroyInstance(
-            self.instance, 
-            None
-        )
+        vkDestroyInstance(self.instance, None)
 
 	    #encerrar o glfw
         glfw.terminate()
