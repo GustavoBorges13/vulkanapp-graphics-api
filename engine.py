@@ -99,6 +99,8 @@ class Engine:
         self.swapchainFrames = bundle.frames
         self.swapchainFormat = bundle.format
         self.swapchainExtent = bundle.extent
+        self.maxFramesInFlight = len(self.swapchainFrames)
+        self.frameNumber = 0
 
     def make_pipeline(self):
 
@@ -150,17 +152,35 @@ class Engine:
         )
 
         """
-        Primitivos de sincronização:
+        Primitivos de sincronização  (singlethreading)
         - inFlightFence: Usado para garantir que as operações de renderização estejam concluídas antes de avançar para o próximo quadro.
         - imageAvailable: Semáforo sinalizado quando uma imagem do swapchain está disponível para uso. O trabalho gráfico só pode prosseguir após essa sinalização.
         - renderFinished: Semáforo sinalizado quando a renderização do quadro atual está concluída. Espera-se que o sistema só apresente a imagem quando esta semáforo estiver sinalizado, indicando que a renderização foi finalizada corretamente.
-        Nao podemos apresentar uma imagem ate que ela tenha sido processada corretamente.
-        """
-        self.inFlightFence = sync.make_fence(self.device, self.debugMode)
-        self.imageAvailable = sync.make_semaphore(self.device, self.debugMode)
-        self.renderFinished = sync.make_semaphore(self.device, self.debugMode)
         
-    def record_draw_commands(self, commandBuffer, imageIndex):
+        Como estamos no contexto singlethreading, todos os quadros compartilham o mesmo conjunto de semáforos e fences. Isso significa que a renderização de cada quadro deve ser sequencial e sincronizada, garantindo que não haja concorrência entre quadros.
+        Não podemos apresentar uma imagem até que ela tenha sido processada corretamente, e a sincronização é feita de maneira linear no ciclo de renderização.
+        """
+        #singleThread enderind
+        #self.inFlightFence = sync.make_fence(self.device, self.debugMode)
+        #self.imageAvailable = sync.make_semaphore(self.device, self.debugMode)
+        #self.renderFinished = sync.make_semaphore(self.device, self.debugMode)
+
+        """
+        Primitivos de sincronização (multithreading)
+        - inFlightFence: Usado para garantir que as operações de renderização estejam concluídas antes de avançar para o próximo quadro.
+        - imageAvailable: Semáforo sinalizado quando uma imagem do swapchain está disponível para uso. O trabalho gráfico só pode prosseguir após essa sinalização.
+        - renderFinished: Semáforo sinalizado quando a renderização do quadro atual está concluída. Espera-se que o sistema só apresente a imagem quando esta semáforo estiver sinalizado, indicando que a renderização foi finalizada corretamente.
+        
+        Como agora estamos no contexto multithreading, cada quadro do swapchain possui seus próprios semáforos e fences, permitindo que múltiplos quadros sejam renderizados simultaneamente em threads diferentes, se necessário.
+        Não podemos apresentar uma imagem até que ela tenha sido processada corretamente e a sincronização entre as threads garante que isso seja feito de forma ordenada.
+        """
+        #smultithreading renderind
+        for frame in self.swapchainFrames:
+            frame.inFlight = sync.make_fence(self.device, self.debugMode)
+            frame.imageAvailable = sync.make_semaphore(self.device, self.debugMode)
+            frame.renderFinished = sync.make_semaphore(self.device, self.debugMode)
+
+    def record_draw_commands(self, commandBuffer, imageIndex, scene):
 
         """
         Etapas para gravar os comandos de desenho no buffer de comando:
@@ -190,17 +210,41 @@ class Engine:
         renderpassInfo.clearValueCount = 1
         renderpassInfo.pClearValues = ffi.addressof(clearColor)
         
-        #iniciar a renderpass, indicando que os comandos subsequentes serão gráficos
+        #iniciar a render pass, indicando que os comandos subsequentes serão gráficos.
+        #isso estabelece o contexto de renderização para o framebuffer de destino.
         vkCmdBeginRenderPass(commandBuffer, renderpassInfo, VK_SUBPASS_CONTENTS_INLINE)
 
-        #vincular o pipeline gráfico, que contém os shaders e o estado do pipeline
+        #vincular o pipeline gráfico, que contém os shaders e o estado do pipeline.
+        #a partir deste ponto, todas as operações seguirão as configurações definidas no pipeline.
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, self.pipeline)
 
-        #emitir o comando de desenho para desenhar 3 vértices (um triângulo)
-        vkCmdDraw(
-            commandBuffer = commandBuffer, vertexCount = 3, 
-            instanceCount = 1, firstVertex = 0, firstInstance = 0
-        )
+        #iterar sobre cada posição dos triângulos definidos na cena.
+        for position in scene.triangle_positions:
+
+            #criar a matriz de transformação do modelo com base na posição do triângulo.
+            #essa matriz será usada para aplicar uma translação ao triângulo, posicionando-o corretamente.
+            model_transform = pyrr.matrix44.create_from_translation(vec = position, dtype = np.float32)
+
+            #converter a matriz de transformação para um formato adequado ao Vulkan (ponteiro para float).
+            #objData = ffi.cast("float *", model_transform.ctypes.data)
+            #objData = ffi.cast("float *", ffi.from_buffer(model_transform))
+            
+            objData = ffi.cast("float *", ffi.from_buffer(model_transform))
+
+            #enviar os dados de transformação para o shader de vértice usando push constants.
+            #objData = ffi.cast("float *", model_transform.__array_interface__["data"][0])
+            vkCmdPushConstants(
+                commandBuffer=commandBuffer, layout = self.pipelineLayout,
+                stageFlags = VK_SHADER_STAGE_VERTEX_BIT, offset = 0,
+                size = 4 * 4 * 4, pValues = objData
+            )
+            #emitir o comando de desenho para renderizar 3 vértices (um triângulo) no buffer de comando.
+            #cada triângulo será desenhado com a transformação aplicada.
+            vkCmdDraw(
+                commandBuffer = commandBuffer, vertexCount = 3, 
+                instanceCount = 1, firstVertex = 0, firstInstance = 0
+            )
+        
 
         #finalizar a renderpass
         vkCmdEndRenderPass(commandBuffer)
@@ -212,12 +256,14 @@ class Engine:
             if self.debugMode:
                 print(f"{FAIL}Falha ao terminar o buffer de comando de gravação{RESET}")
 
-    def render(self):
+    def render(self, scene):
 
         #procedimentos de instância de captura
         vkAcquireNextImageKHR = vkGetDeviceProcAddr(self.device, 'vkAcquireNextImageKHR')
         vkQueuePresentKHR = vkGetDeviceProcAddr(self.device, 'vkQueuePresentKHR')
 
+        """
+        (singlethreading)
 
         #verificar se o caminho esta aberto
         #verifica se a cerca (fence) está sinalizada, garantindo que o processamento do quadro anterior foi concluído.
@@ -272,6 +318,73 @@ class Engine:
 
         #apresenta a imagem à fila de apresentação
         vkQueuePresentKHR(self.presentQueue, presentInfo)
+        """
+        
+        # (multithreading)
+        # Sincronização inicial: verifica se o quadro anterior já foi processado completamente.
+        # Aqui, estamos esperando que a fence associada ao quadro atual (self.frameNumber) seja sinalizada,
+        # indicando que a execução anterior terminou. Isso é essencial para evitar sobrescrita do buffer de comandos.
+        vkWaitForFences(
+            device = self.device, fenceCount = 1, pFences = [self.swapchainFrames[self.frameNumber].inFlight,], 
+            waitAll = VK_TRUE, timeout = 1000000000
+        ) # Timeout em nanosegundos (1 segundo)
+
+        # Após verificar a fence, ela é resetada para ser reutilizada na próxima submissão de comandos.
+        vkResetFences(
+            device = self.device, fenceCount = 1, pFences = [self.swapchainFrames[self.frameNumber].inFlight,]
+        )
+
+        # Adquire o índice da próxima imagem disponível do swapchain para renderização.
+        # Essa operação é bloqueante até que a imagem esteja disponível ou o timeout seja atingido.
+        # O semáforo 'imageAvailable' será sinalizado quando a imagem estiver pronta.
+        imageIndex = vkAcquireNextImageKHR(
+            device = self.device, swapchain = self.swapchain, timeout = 1000000000, 
+            semaphore = self.swapchainFrames[self.frameNumber].imageAvailable, fence = VK_NULL_HANDLE
+        )
+
+        # Reseta o comando de buffer associado ao frame atual para preparar novos comandos de desenho.
+        commandBuffer = self.swapchainFrames[self.frameNumber].commandbuffer
+        vkResetCommandBuffer(commandBuffer = commandBuffer, flags = 0)
+
+        # Grava os comandos de desenho no buffer de comando para o índice de imagem obtido.
+        # Isso inclui comandos de renderização, configuração de estados e envio dos dados da cena.
+        self.record_draw_commands(commandBuffer, imageIndex, scene)
+
+        # Configura as informações necessárias para submeter os comandos à fila gráfica.
+        # Isso inclui sincronizar com o semáforo 'imageAvailable' e sinalizar o semáforo 'renderFinished'
+        # quando o processamento do quadro estiver completo.
+        submitInfo = VkSubmitInfo(
+            waitSemaphoreCount = 1, pWaitSemaphores = [self.swapchainFrames[self.frameNumber].imageAvailable,], 
+            pWaitDstStageMask=[VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,],
+            commandBufferCount = 1, pCommandBuffers = [commandBuffer,], signalSemaphoreCount = 1,
+            pSignalSemaphores = [self.swapchainFrames[self.frameNumber].renderFinished,]
+        )
+
+        # Submete o buffer de comando à fila gráfica.
+        # A fence associada é usada para garantir que o quadro atual seja finalizado antes de ser reutilizado.
+        try:
+            vkQueueSubmit(
+                queue = self.graphicsQueue, submitCount = 1, 
+                pSubmits = submitInfo, fence = self.swapchainFrames[self.frameNumber].inFlight
+            )
+        except:
+            if self.debugMode:
+                print("Falha ao enviar comandos de desenho")
+
+        # Configura as informações necessárias para a apresentação da imagem.
+        # Isso inclui garantir que a imagem só será apresentada após o semáforo 'renderFinished' ser sinalizado,
+        # o que indica que a renderização está concluída.
+        presentInfo = VkPresentInfoKHR(
+            waitSemaphoreCount = 1, pWaitSemaphores = [self.swapchainFrames[self.frameNumber].renderFinished,],
+            swapchainCount = 1, pSwapchains = [self.swapchain,],
+            pImageIndices = [imageIndex,]
+        )
+
+        # Apresenta a imagem renderizada na fila de apresentação (tipicamente, na tela).
+        vkQueuePresentKHR(self.presentQueue, presentInfo)
+        
+        # Atualiza o índice do frame para que o próximo ciclo de renderização use o próximo conjunto de buffers.
+        self.frameNumber = (self.frameNumber + 1) % self.maxFramesInFlight
 
     def close(self):
         vkDeviceWaitIdle(self.device)
@@ -279,9 +392,6 @@ class Engine:
         if self.debugMode:
             print(f"{HEADER}\nAté logo!\n{RESET}")
 
-        vkDestroyFence(self.device, self.inFlightFence, None)
-        vkDestroySemaphore(self.device, self.imageAvailable, None)
-        vkDestroySemaphore(self.device, self.renderFinished, None)
         vkDestroyCommandPool(self.device, self.commandPool, None)
         vkDestroyPipeline(self.device, self.pipeline, None)
         vkDestroyPipelineLayout(self.device, self.pipelineLayout, None)
@@ -293,6 +403,10 @@ class Engine:
             vkDestroyFramebuffer(
                 device = self.device, framebuffer = frame.framebuffer, pAllocator = None
             )
+            #Para renderização multithread, use este
+            vkDestroyFence(self.device, frame.inFlight, None)
+            vkDestroySemaphore(self.device, frame.imageAvailable, None)
+            vkDestroySemaphore(self.device, frame.renderFinished, None)
         destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
         destructionFunction(self.device, self.swapchain, None)
         vkDestroyDevice(

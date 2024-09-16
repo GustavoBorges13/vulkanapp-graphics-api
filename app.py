@@ -1,5 +1,6 @@
 from config import *
 import engine
+import scene
 
 class App:
 
@@ -11,6 +12,7 @@ class App:
 
         # Inicializa o motor gráfico com parâmetros como dimensões e janela
         self.graphicsEngine = engine.Engine(width, height, self.window, glfw_title_name, debugMode)
+        self.scene = scene.Scene() #carrega a cena com grades de posicoes que cobrirá a tela
         
         # Variáveis para cálculo do framerate
         self.lastTime = glfw.get_time()         # Tempo do último frame
@@ -64,7 +66,7 @@ class App:
             glfw.poll_events()
 
             # Chama o motor gráfico para renderizar a cena
-            self.graphicsEngine.render()
+            self.graphicsEngine.render(self.scene)
 
             # Calcula o framerate e atualiza a janela
             self.calculate_framerate()

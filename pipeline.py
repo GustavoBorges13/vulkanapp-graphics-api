@@ -73,16 +73,27 @@ def create_render_pass(device, swapchainImageFormat):
 
 """
 A função create_pipeline_layout cria o layout do pipeline.
-Aqui estamos criando um pipeline simples, sem push constants ou descritores.
+Neste caso, estamos utilizando push constants, que são uma maneira eficiente 
+de passar pequenas quantidades de dados diretamente para os shaders.
 """
 def create_pipeline_layout(device):
-
-    pipelineLayoutInfo = VkPipelineLayoutCreateInfo(
-        sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        pushConstantRangeCount = 0,
-        setLayoutCount = 0
+    
+    # Definição de um push constant range para o estágio do Vertex Shader (VK_SHADER_STAGE_VERTEX_BIT)
+    # Este range permite que passemos 64 bytes de dados (4x4 floats, que geralmente correspondem a uma matriz 4x4)
+    pushConstantInfo = VkPushConstantRange(
+        stageFlags = VK_SHADER_STAGE_VERTEX_BIT, offset = 0,
+        size = 4 * 4 * 4
     )
 
+    # Criação da estrutura de informações do layout do pipeline
+    # Inclui a definição de push constants, mas sem descritores (setLayoutCount = 0)
+    pipelineLayoutInfo = VkPipelineLayoutCreateInfo(
+        sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        pushConstantRangeCount = 1, pPushConstantRanges = [pushConstantInfo,],
+        setLayoutCount = 0
+    )
+    
+    # Cria e retorna o layout do pipeline com as configurações de push constants
     return vkCreatePipelineLayout(
         device = device, pCreateInfo = pipelineLayoutInfo, pAllocator = None
     )

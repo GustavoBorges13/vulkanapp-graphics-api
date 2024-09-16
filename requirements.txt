@@ -1,2 +1,4 @@
 vulkan
 glfw
+numpy
+pyrr
