@@ -229,24 +229,41 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 ```bash
 .
 ├── .gitignore                  # Git ignore file
-├── colors.py                   # Color handling for rendering
-├── config.py                   # Vulkan configuration
+├── app.py                      # Window glfw prepare
+├── colors.py                   # Color handling for print debugMode
+├── commands.py                 # Command handling and execution
+├── config.py                   # Python imports general
 ├── device.py                   # Device selection and management
 ├── docker-commands.md          # Docker commands and setup instructions
 ├── docker-compose.yml          # Docker Compose configuration
 ├── Dockerfile                  # Docker configuration for building the image
-├── Dockerfile copy             # Possibly an outdated or alternative Dockerfile
+├── engine.py                   # Core engine logic for the application
+├── frame.py                    # Frame handling for rendering
+├── framebuffer.py              # Framebuffer management
 ├── instance.py                 # Vulkan instance creation
 ├── LICENSE                     # License file for the project
-├── logging.py                  # Logging utilities
-├── main.py                     # Main script to launch the rendering
+├── logging.py                  # Logging utilities - Validation Layers
+├── main.py                     # Main application to launch program
+├── pipeline.py                 # Pipeline configuration and management
+├── queue_families.py           # Queue families management for Vulkan
 ├── README.md                   # Project documentation and overview
 ├── requirements.txt            # Python dependencies
+├── shaders.py                  # Shader management for rendering
+├── swapchain.py                # Swapchain handling for Vulkan
+├── sync.py                     # Synchronization primitives
+│
+├── .github
+│   └── workflows
+│       └── Docker.yml          # GitHub Actions automatic workflow for Docker
+│
+├── shaders                     # Shader files for the application
+│   ├── compile_shaders.bat     # Batch script to compile shaders
+│   ├── frag.spv                # Compiled fragment shader
+│   ├── shader.frag             # Fragment shader source code
+│   ├── shader.vert             # Vertex shader source code
+│   └── vert.spv                # Compiled vertex shader
+│
 └── __pycache__                 # Compiled Python files
-
-└── .github
-    └── workflows
-        └── Docker.yml          # GitHub Actions workflow for Docker
 ```
 <br>
 
