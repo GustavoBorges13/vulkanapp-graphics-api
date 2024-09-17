@@ -1,5 +1,5 @@
 from config import *
-import logging
+import vklogging
 
 class framebufferInput:
     """
@@ -35,8 +35,8 @@ def make_framebuffers(inputChunk, frames):
                 inputChunk.device, framebufferInfo, None
             )
 
-            logging.logger.print(f"{OKGREEN}Criou o framebuffer para o quadro {i}{RESET}")
+            vklogging.logger.print(f"{OKGREEN}Criou o framebuffer para o quadro {i}{RESET}")
             
         except:
 
-            logging.logger.print(f"{FAIL}Falha ao criar o framebuffer para o quadro {i}{RESET}")
+            vklogging.logger.print(f"{FAIL}Falha ao criar o framebuffer para o quadro {i}{RESET}")

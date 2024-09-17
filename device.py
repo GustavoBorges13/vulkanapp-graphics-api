@@ -1,5 +1,5 @@
 from config import *
-import logging
+import vklogging
 import queue_families  
 
 validationLayers = ["VK_LAYER_KHRONOS_validation"]
@@ -26,8 +26,8 @@ def check_device_extension_support(device, requestedExtensions):
         for extension in vkEnumerateDeviceExtensionProperties(device, None)
     ]
 
-    logging.logger.print(f"{WARNING}O dispositivo pode suportar extensões:{RESET}")
-    logging.logger.log_list(supportedExtensions)
+    vklogging.logger.print(f"{WARNING}O dispositivo pode suportar extensões:{RESET}")
+    vklogging.logger.log_list(supportedExtensions)
 
     for extension in requestedExtensions:
         if extension not in supportedExtensions:
@@ -37,7 +37,7 @@ def check_device_extension_support(device, requestedExtensions):
 
 def is_suitable(device):
 
-    logging.logger.print(f"{WARNING}Verificar se o dispositivo é adequado{RESET}")
+    vklogging.logger.print(f"{WARNING}Verificar se o dispositivo é adequado{RESET}")
 
     """
         Um dispositivo é adequado se puder ser apresentado no ecrã, ou seja, se suportar
@@ -47,15 +47,15 @@ def is_suitable(device):
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     ]
 
-    logging.logger.print(f"{HEADER}:: Extensões de dispositivos a solicitar:{RESET}")
-    logging.logger.log_list(requestedExtensions)
+    vklogging.logger.print(f"{HEADER}:: Extensões de dispositivos a solicitar:{RESET}")
+    vklogging.logger.log_list(requestedExtensions)
 
     if check_device_extension_support(device, requestedExtensions):
 
-        logging.logger.print(f"{OKGREEN}O dispositivo pode suportar as extensões solicitadas!{RESET}")
+        vklogging.logger.print(f"{OKGREEN}O dispositivo pode suportar as extensões solicitadas!{RESET}")
         return True
     
-    logging.logger.print(f"{FAIL}O dispositivo não pode suportar as extensões solicitadas!{RESET}")
+    vklogging.logger.print(f"{FAIL}O dispositivo não pode suportar as extensões solicitadas!{RESET}")
 
     return False
 
@@ -68,18 +68,18 @@ def choose_physical_device(instance):
         independentemente do programa.
     """
 
-    logging.logger.print(f"{HEADER}:: Seleção do dispositivo físico{RESET}")
+    vklogging.logger.print(f"{HEADER}:: Seleção do dispositivo físico{RESET}")
 
     """
         vkEnumeratePhysicalDevices(instance) -> List(vkPhysicalDevice)
     """
     availableDevices = vkEnumeratePhysicalDevices(instance)
 
-    logging.logger.print(f"{OKBLUE}Existem {len(availableDevices)} dispositivos físicos disponíveis neste sistema{RESET}")
+    vklogging.logger.print(f"{OKBLUE}Existem {len(availableDevices)} dispositivos físicos disponíveis neste sistema{RESET}")
 
     # verificar se é possível encontrar um dispositivo adequado
     for device in availableDevices:
-        logging.logger.log_device_properties(device)
+        vklogging.logger.log_device_properties(device)
         if is_suitable(device):
             return device
 
@@ -118,7 +118,7 @@ def create_logical_device(physicalDevice, instance, surface):
     devicesFeatures = VkPhysicalDeviceFeatures()
 
     enabledLayers = []
-    if logging.logger.debug_mode:
+    if vklogging.logger.debug_mode:
         enabledLayers.extend(validationLayers)
 
     deviceExtensions = [

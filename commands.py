@@ -1,6 +1,6 @@
 from config import *
 import queue_families
-import logging
+import vklogging
 
 class commandPoolInputChunk:
     """
@@ -47,10 +47,10 @@ def make_command_pool(inputChunk):
         commandPool = vkCreateCommandPool(
             inputChunk.device, poolInfo, None
         )
-        logging.logger.print(f"{HEADER}Conjunto de comandos criado{RESET}")
+        vklogging.logger.print(f"{HEADER}Pool de comandos criado{RESET}")
         return commandPool
     except:
-        logging.logger.print(f"{FAIL}Falha ao criar o pool de comandos{RESET}")
+        vklogging.logger.print(f"{FAIL}Falha ao criar o pool de comandos{RESET}")
         return None
     
 def make_frame_command_buffers(inputChunk: commandbufferInputChunk) -> None:
@@ -74,9 +74,9 @@ def make_frame_command_buffers(inputChunk: commandbufferInputChunk) -> None:
         try:
             frame.commandbuffer = vkAllocateCommandBuffers(inputChunk.device, allocInfo)[0]
 
-            logging.logger.print(f"{OKGREEN}Buffer de comando alocado para o quadro {i}{RESET}")
+            vklogging.logger.print(f"{OKGREEN}Buffer de comando alocado para o quadro {i}{RESET}")
         except:
-            logging.logger.print(f"{FAIL}Falha ao alocar o buffer de comando para o quadro {i}{RESET}")
+            vklogging.logger.print(f"{FAIL}Falha ao alocar o buffer de comando para o quadro {i}{RESET}")
 
     
 def make_command_buffer(inputChunk):
@@ -96,8 +96,8 @@ def make_command_buffer(inputChunk):
     try:
         commandbuffer = vkAllocateCommandBuffers(inputChunk.device, allocInfo)[0]
 
-        logging.logger.print(f"{OKBLUE}Buffer de comando principal alocado{RESET}")
+        vklogging.logger.print(f"{OKBLUE}Buffer de comando principal alocado{RESET}")
         return commandbuffer
     except:
-        logging.logger.print(f"{FAIL}Failed to allocate main command buffer{RESET}")
+        vklogging.logger.print(f"{FAIL}Failed to allocate main command buffer{RESET}")
         return None

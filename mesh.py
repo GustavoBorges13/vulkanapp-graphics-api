@@ -14,8 +14,11 @@ def get_pos_color_binding_description():
     } VkVertexInputBindingDescription;
     """
 
+    floatsPerVertex = 7
+    bytesPerFloat = 4
     return VkVertexInputBindingDescription(
-        binding = 0, stride = 20, inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        binding = 0, stride = floatsPerVertex * bytesPerFloat, 
+        inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     )
 
 def get_pos_color_attribute_descriptions():
@@ -32,6 +35,8 @@ def get_pos_color_attribute_descriptions():
         uint32_t    offset;
     } VkVertexInputAttributeDescription;
     """
+    
+    bytesPerFloat = 4
 
     return (
         VkVertexInputAttributeDescription(
@@ -42,6 +47,11 @@ def get_pos_color_attribute_descriptions():
         VkVertexInputAttributeDescription(
             binding = 0, location = 1,
             format = VK_FORMAT_R32G32B32_SFLOAT,
-            offset = 8
+            offset = 2 * bytesPerFloat
+        ),
+        VkVertexInputAttributeDescription(
+            binding = 0, location = 2,
+            format = VK_FORMAT_R32G32_SFLOAT,
+            offset = 5 * bytesPerFloat
         )
     )

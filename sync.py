@@ -1,5 +1,5 @@
 from config import *
-import logging
+import vklogging
 
 def make_semaphore(device):
 
@@ -12,7 +12,7 @@ def make_semaphore(device):
     
     except:
 
-        logging.logger.print(f"{FAIL}Falha ao criar o semáforo{RESET}")
+        vklogging.logger.print(f"{FAIL}Falha ao criar o semáforo{RESET}")
         
         return None
 
@@ -29,6 +29,6 @@ def make_fence(device):
     
     except:
 
-        logging.logger.print(f"{FAIL}Failed to create fence{RESET}")
+        vklogging.logger.print(f"{FAIL}Failed to create fence{RESET}")
         
         return None

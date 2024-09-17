@@ -1,5 +1,5 @@
 from config import *
-import logging
+import vklogging
 
 class QueueFamilyIndices:
 
@@ -20,7 +20,7 @@ def find_queue_families(device, instance, surface):
         queueFamilies = vkGetPhysicalDeviceQueueFamilyProperties(device)
 
 
-        logging.logger.print(f"{WARNING}Há {len(queueFamilies)} famílias de filas disponíveis no sistema.{RESET}")
+        vklogging.logger.print(f"{WARNING}Há {len(queueFamilies)} famílias de filas disponíveis no sistema.{RESET}")
 
         # Verificacao bit a bit para verificar se a fila suporta nossas operacoes graficas
         for i, queueFamily in enumerate(queueFamilies):
@@ -56,12 +56,12 @@ def find_queue_families(device, instance, surface):
             if queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT:
                 indices.graphicsFamily = i
 
-                logging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para gráficos.{RESET}")
+                vklogging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para gráficos.{RESET}")
 
             if surfaceSupport(device, i, surface):
                 indices.presentFamily = i
 
-                logging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para apresentar.{RESET}")
+                vklogging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para apresentar.{RESET}")
 
             if indices.is_complete():
                 break

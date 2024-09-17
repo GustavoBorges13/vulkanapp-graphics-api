@@ -1,14 +1,14 @@
 from config import *
 import engine
 import scene
-import logging
+import vklogging
 
 class App:
 
 
     def __init__(self, width, height, glfw_title_name, debug_mode):
 
-        logging.logger.set_debug_mode(debug_mode)
+        vklogging.logger.set_debug_mode(debug_mode)
 
         # Constrói a janela GLFW e inicializa a engine gráfica
         self.build_glfw_window(width, height, glfw_title_name)
@@ -39,9 +39,9 @@ class App:
 
         # Verifica se a janela foi criada com sucesso
         if self.window is not None:
-            logging.logger.print(f"{OKGREEN}Foi criada com êxito uma janela glfw chamada {glfw_title_name}, largura: {width}, altura: {height}{RESET}\n")
+            vklogging.logger.print(f"{OKGREEN}Foi criada com êxito uma janela glfw chamada {glfw_title_name}, largura: {width}, altura: {height}{RESET}\n")
         else:
-            logging.logger.print(f"{FAIL}Falha na criação da janela GLFW{RESET}\n")
+            vklogging.logger.print(f"{FAIL}Falha na criação da janela GLFW{RESET}\n")
 
     def calculate_framerate(self):
 

@@ -1,7 +1,8 @@
 from config import *
-import logging
+import vklogging
 import queue_families
 import frame
+import image
 
 class SwapChainSupportDetails:
 
@@ -44,24 +45,24 @@ def query_swapchain_support(instance, physicalDevice, surface):
     )
     support.capabilities = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface)
 
-    logging.logger.log_surface_capabilities(support)
+    vklogging.logger.log_surface_capabilities(support)
 
     vkGetPhysicalDeviceSurfaceFormatsKHR = vkGetInstanceProcAddr(
         instance, 'vkGetPhysicalDeviceSurfaceFormatsKHR'
     )
     support.formats = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface)
 
-    logging.logger.print(f"\t{WARNING}combinações de formatos de pixel e espaços de cores suportados:{RESET}")
+    vklogging.logger.print(f"\t{WARNING}combinações de formatos de pixel e espaços de cores suportados:{RESET}")
     for supportedFormat in support.formats:
-        logging.logger.log_surface_format(supportedFormat)
+        vklogging.logger.log_surface_format(supportedFormat)
 
     vkGetPhysicalDeviceSurfacePresentModesKHR = vkGetInstanceProcAddr(
         instance, 'vkGetPhysicalDeviceSurfacePresentModesKHR'
     )
     support.presentModes = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface)
 
-    logging.logger.print(f"\t{WARNING}Modos de Apresentação Suportados:{RESET}")
-    logging.logger.log_list(support.presentModes)
+    vklogging.logger.print(f"\t{WARNING}Modos de Apresentação Suportados:{RESET}")
+    vklogging.logger.log_list(support.presentModes)
 
     return support
 
@@ -171,21 +172,15 @@ def create_swapchain(instance, logicalDevice, physicalDevice, surface, width, he
         pQueueFamilyIndices = queueFamilyIndices
     else:
         imageSharingMode = VK_SHARING_MODE_EXCLUSIVE
-        queueFamilyIndexCount = 0 
-        pQueueFamilyIndices = None # nao precisa definir.
+        queueFamilyIndexCount = 0
+        pQueueFamilyIndices = None
 
     createInfo = VkSwapchainCreateInfoKHR(
-        surface = surface, 
-        minImageCount = imageCount, 
-        imageFormat = format.format,
-        imageColorSpace = format.colorSpace, 
-        imageExtent = extent, imageArrayLayers = 1,
-        imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
-        imageSharingMode = imageSharingMode,
-        queueFamilyIndexCount = queueFamilyIndexCount, 
-        pQueueFamilyIndices = pQueueFamilyIndices,
-        preTransform = support.capabilities.currentTransform,
-        compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        surface = surface, minImageCount = imageCount, imageFormat = format.format,
+        imageColorSpace = format.colorSpace, imageExtent = extent, imageArrayLayers = 1,
+        imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, imageSharingMode = imageSharingMode,
+        queueFamilyIndexCount = queueFamilyIndexCount, pQueueFamilyIndices = pQueueFamilyIndices,
+        preTransform = support.capabilities.currentTransform, compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         presentMode = presentMode, clipped = VK_TRUE
     )
 
@@ -202,39 +197,15 @@ def create_swapchain(instance, logicalDevice, physicalDevice, surface, width, he
     E depois olhamos para as imagens construindo uma visualizacao de imagem a cada imagem,
     em seguida, armazenar toda informacao em um frame e colocoar esse frame em um pacote.
     """
-    for image in images:
-
-        components = VkComponentMapping(
-            r = VK_COMPONENT_SWIZZLE_IDENTITY,
-            g = VK_COMPONENT_SWIZZLE_IDENTITY,
-            b = VK_COMPONENT_SWIZZLE_IDENTITY,
-            a = VK_COMPONENT_SWIZZLE_IDENTITY
-        )
-
-        subresourceRange = VkImageSubresourceRange(
-            aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            baseMipLevel = 0, levelCount = 1,
-            baseArrayLayer = 0, layerCount = 1
-        )
-
-        #Da pra usar 3d view type...
-        create_info = VkImageViewCreateInfo(
-            image = image, 
-            viewType = VK_IMAGE_VIEW_TYPE_2D,
-            format = format.format, 
-            components = components,
-            subresourceRange = subresourceRange
-        )
+    for _image in images:
 
         swapchain_frame = frame.SwapChainFrame()
-        swapchain_frame.image = image
-        swapchain_frame.image_view = vkCreateImageView(
-            device = logicalDevice, 
-            pCreateInfo = create_info, 
-            pAllocator = None
+        swapchain_frame.image = _image
+        swapchain_frame.image_view = image.make_image_view(
+            logicalDevice, _image, format.format
         )
         bundle.frames.append(swapchain_frame)
-
+    
     bundle.format = format.format
     bundle.extent = extent
 

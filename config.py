@@ -26,6 +26,11 @@ import glfw.GLFW as GLFW_CONSTANTS      #constantes úteis do GLFW para manipula
 import numpy as np 						#descreve vetores
 import pyrr 							#constroi matrizes
 
+#----- Mesh Types ----#
+TRIANGLE = 0
+SQUARE = 1
+STAR = 2
+
 # PT-BR console
 import sys
 import io

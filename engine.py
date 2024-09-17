@@ -1,12 +1,17 @@
 from config import *
 import instance
-import logging
+import vklogging
 import device
 import swapchain
 import pipeline
 import framebuffer
 import commands
 import sync
+import vertex_menagerie
+import descriptors
+import frame
+import scene
+import image
 
 # https://registry.khronos.org/vulkan/specs/1.3/html/ documentacao vulkan
 
@@ -22,20 +27,22 @@ class Engine:
 
         self.window = window
 
-        logging.logger.print(f"{HEADER}:: Criar um motor gráfico (ENGINE){RESET}")
+        vklogging.logger.print(f"{HEADER}:: Criar um motor gráfico (ENGINE){RESET}")
 
         self.make_instance()
         self.make_device()
+        self.make_descriptor_set_layout()
         self.make_pipeline()
         self.finalize_setup()
+        self.make_assets()
   
     def make_instance(self):
         #cria uma instância do Vulkan, que é a base para qualquer aplicação Vulkan.
         self.instance = instance.make_instance(self.glfw_title_name)
 
         #se o modo de depuração estiver ativado, cria o mensageiro de depuração
-        if logging.logger.debug_mode:
-            self.debugMessenger = logging.make_debug_messenger(self.instance)
+        if vklogging.logger.debug_mode:
+            self.debugMessenger = vklogging.make_debug_messenger(self.instance)
 
         #criar a superfície de renderização a partir da janela GLFW.
         #a superfície permite que o Vulkan interaja com o sistema de janelas para desenhar na tela.
@@ -50,9 +57,9 @@ class Engine:
                 surface = c_style_surface
             ) != VK_SUCCESS
         ):
-            logging.logger.print(f"{FAIL}Falha ao criar a superfície da janela com GLFW para o Vulkan{RESET}")
+            vklogging.logger.print(f"{FAIL}Falha ao criar a superfície da janela com GLFW para o Vulkan{RESET}")
         else:
-            logging.logger.print(f"{OKGREEN}Superfície (surface) da janela criada com sucesso e vinculada ao Vulkan{RESET}")
+            vklogging.logger.print(f"{OKGREEN}Superfície (surface) da janela criada com sucesso e vinculada ao Vulkan{RESET}")
 
         #armazena a superfície criada no objeto.
         self.surface = c_style_surface[0]
@@ -121,7 +128,39 @@ class Engine:
         self.make_swapchain()
         self.make_framebuffers()
         self.make_frame_command_buffers()
-        self.make_frame_sync_objects()
+        self.make_frame_resources()
+    
+    def make_descriptor_set_layout(self):
+        """
+            Criar uma classe de estrutura de ligações e preenche-la.
+        """
+        bindings = descriptors.DescriptorSetLayoutData()
+        bindings.count = 2
+
+        bindings.indices.append(0)
+        bindings.types.append(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        bindings.counts.append(1)
+        bindings.stages.append(VK_SHADER_STAGE_VERTEX_BIT)
+
+        bindings.indices.append(1)
+        bindings.types.append(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+        bindings.counts.append(1)
+        bindings.stages.append(VK_SHADER_STAGE_VERTEX_BIT)
+
+        self.frameDescriptorSetLayout = descriptors.make_descriptor_set_layout(
+            self.device, bindings
+        )
+
+        bindings.count = 1
+
+        bindings.indices[0] = 0
+        bindings.types[0] = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+        bindings.counts[0] = 1
+        bindings.stages[0] = VK_SHADER_STAGE_FRAGMENT_BIT
+
+        self.materialDescriptorSetLayout = descriptors.make_descriptor_set_layout(
+            self.device, bindings
+        )
 
     def make_pipeline(self):
 
@@ -131,7 +170,11 @@ class Engine:
             swapchainImageFormat = self.swapchainFormat,
             swapchainExtent = self.swapchainExtent,
             vertexFilepath = "shaders/vert.spv",
-            fragmentFilepath = "shaders/frag.spv"
+            fragmentFilepath = "shaders/frag.spv",
+            descriptorSetLayouts = [
+                self.frameDescriptorSetLayout, 
+                self.materialDescriptorSetLayout
+            ]
         )
 
         #criação do pipeline gráfico utilizando o pacote de entrada
@@ -140,7 +183,7 @@ class Engine:
         #configuração do layout do pipeline, renderpass e pipeline em si a partir do bundle de saída   
         self.pipelineLayout = outputBundle.pipelineLayout
         self.renderpass = outputBundle.renderPass
-        self.pipeline = outputBundle.pipeline        
+        self.pipeline = outputBundle.pipeline       
 
     def make_framebuffers(self):
         """
@@ -166,10 +209,20 @@ class Engine:
         commandbufferInput.frames = self.swapchainFrames 
         commands.make_frame_command_buffers(commandbufferInput)
 
-    def make_frame_sync_objects(self):
+    def make_frame_resources(self):
         """
             Crie os semáforos e as cercas necessárias para renderizar cada quadro.
         """
+
+        bindings = descriptors.DescriptorSetLayoutData()
+        bindings.types.append(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+        bindings.types.append(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+
+        self.descriptorPool = descriptors.make_descriptor_pool(
+            device = self.device, size = len(self.swapchainFrames), 
+            bindings = bindings
+        )
+
         """
         Primitivos de sincronização  (singlethreading)
         - inFlightFence: Usado para garantir que as operações de renderização estejam concluídas antes de avançar para o próximo quadro.
@@ -179,7 +232,7 @@ class Engine:
         Como estamos no contexto singlethreading, todos os quadros compartilham o mesmo conjunto de semáforos e fences. Isso significa que a renderização de cada quadro deve ser sequencial e sincronizada, garantindo que não haja concorrência entre quadros.
         Não podemos apresentar uma imagem até que ela tenha sido processada corretamente, e a sincronização é feita de maneira linear no ciclo de renderização.
         """
-        #singleThread enderind
+        #singleThread rendering
         #self.inFlightFence = sync.make_fence(self.device, self.debug_mode)
         #self.imageAvailable = sync.make_semaphore(self.device, self.debug_mode)
         #self.renderFinished = sync.make_semaphore(self.device, self.debug_mode)
@@ -199,6 +252,12 @@ class Engine:
             frame.inFlight = sync.make_fence(self.device)
             frame.imageAvailable = sync.make_semaphore(self.device)
             frame.renderFinished = sync.make_semaphore(self.device)
+
+            frame.make_descriptor_resources(self.device, self.physicalDevice)
+
+            frame.descriptorSet = descriptors.allocate_descriptor_set(
+                self.device, self.descriptorPool, self.frameDescriptorSetLayout
+            )
 
     def finalize_setup(self):
 
@@ -222,9 +281,184 @@ class Engine:
         commands.make_frame_command_buffers(commandbufferInput)
 
         #criacao do objeto de sincronizacao -> semaforos e cercas (fences)
-        self.make_frame_sync_objects()
+        self.make_frame_resources()
 
-    def record_draw_commands(self, commandBuffer, imageIndex, scene):
+    def make_assets(self):
+
+        self.meshes = vertex_menagerie.VertexMenagerie()
+        
+        vertices = np.array(
+            (
+                 0.0, -0.1, 0.0, 1.0, 0.0, 0.5, 0.0, #0
+                 0.1,  0.1, 0.0, 1.0, 0.0, 1.0, 1.0, #1
+                -0.1,  0.1, 0.0, 1.0, 0.0, 0.0, 1.0  #2
+            ), dtype = np.float32
+        )
+        indices = [0, 1, 2]
+
+        meshType = TRIANGLE
+        self.meshes.consume(meshType, vertices, indices)
+
+        vertices = np.array(
+            (
+                -0.1,  0.1, 1.0, 0.0, 0.0, 0.0, 1.0, #0
+		        -0.1, -0.1, 1.0, 0.0, 0.0, 0.0, 0.0, #1
+		         0.1, -0.1, 1.0, 0.0, 0.0, 1.0, 0.0, #2
+		         0.1,  0.1, 1.0, 0.0, 0.0, 1.0, 1.0, #3
+            ), dtype = np.float32
+        )
+        indices = [
+            0, 1, 2,
+            2, 3, 0
+        ]
+
+        meshType = SQUARE
+        self.meshes.consume(meshType, vertices, indices)
+
+        vertices = np.array(
+            (
+                 -0.1, -0.05, 1.0, 1.0, 1.0, 0.0, 0.25, #0
+		        -0.04, -0.05, 1.0, 1.0, 1.0, 0.3, 0.25, #1
+		        -0.06,   0.0, 1.0, 1.0, 1.0, 0.2,  0.5, #2
+		          0.0,  -0.1, 1.0, 1.0, 1.0, 0.5,  0.0, #3
+		         0.04, -0.05, 1.0, 1.0, 1.0, 0.7, 0.25, #4
+		          0.1, -0.05, 1.0, 1.0, 1.0, 1.0, 0.25, #5
+		         0.06,   0.0, 1.0, 1.0, 1.0, 0.8,  0.5, #6
+		         0.08,   0.1, 1.0, 1.0, 1.0, 0.9,  1.0, #7
+		          0.0,  0.02, 1.0, 1.0, 1.0, 0.5,  0.6, #8
+		        -0.08,   0.1, 1.0, 1.0, 1.0, 0.1,  1.0  #9
+            ), dtype = np.float32
+        )
+        indices = [
+            0, 1, 2,
+            1, 3, 4,
+            2, 1, 4,
+            4, 5, 6,
+            2, 4, 6,
+            6, 7, 8,
+            2, 6, 8,
+            2, 8, 9
+        ]
+
+        meshType = STAR
+        self.meshes.consume(meshType, vertices, indices)
+
+        finalization_chunk = vertex_menagerie.VertexBufferFinalizationChunk()
+        finalization_chunk.command_buffer = self.mainCommandbuffer
+        finalization_chunk.logical_device = self.device
+        finalization_chunk.physical_device = self.physicalDevice
+        finalization_chunk.queue = self.graphicsQueue
+        self.meshes.finalize(finalization_chunk)
+
+        #Materiais
+        self.materials: dict[int, image.Texture] = {}
+        filenames = {
+            TRIANGLE: "tex/grama.jpg",
+            SQUARE: "tex/rocha.jpg",
+            STAR: "tex/cristal.jpg"
+        }
+
+        bindings = descriptors.DescriptorSetLayoutData()
+        bindings.count = 1
+        bindings.types.append(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+        self.materialDescriptorPool = descriptors.make_descriptor_pool(
+            device = self.device, size = len(filenames), bindings = bindings
+        )
+
+        textureInfo = image.TextureInputChunk()
+        textureInfo.descriptorPool = self.materialDescriptorPool
+        textureInfo.descriptorSetLayout = self.materialDescriptorSetLayout
+        textureInfo.logicalDevice = self.device
+        textureInfo.physicalDevice = self.physicalDevice
+        textureInfo.commandBuffer = self.mainCommandbuffer
+        textureInfo.queue = self.graphicsQueue
+
+        for (objectType, filename) in filenames.items():
+            textureInfo.filename = filename
+            self.materials[objectType] = image.Texture(textureInfo)
+
+    def prepare_frame(self, imageIndex: int, _scene: scene.Scene) -> None:
+
+        _frame: frame.SwapChainFrame = self.swapchainFrames[imageIndex]
+
+        position = np.array([1, 0, -1],dtype=np.float32)
+        target = np.array([0, 0, 0],dtype=np.float32)
+        up = np.array([0, 0, -1],dtype=np.float32)
+        _frame.cameraData.view = pyrr.matrix44.create_look_at(position, target, up, dtype=np.float32)
+
+        fov = 45
+        aspect = self.swapchainExtent.width/float(self.swapchainExtent.height)
+        near = 0.1
+        far = 10
+        _frame.cameraData.projection = pyrr.matrix44.create_perspective_projection(fov, aspect, near, far, dtype=np.float32)
+        _frame.cameraData.projection[1][1] *= -1
+
+        _frame.cameraData.view_projection = pyrr.matrix44.multiply(
+            m1 = _frame.cameraData.view, m2 = _frame.cameraData.projection
+        )
+
+        flattened_data = _frame.cameraData.view.astype("f").tobytes() \
+            + _frame.cameraData.projection.astype("f").tobytes() \
+            + _frame.cameraData.view_projection.astype("f").tobytes()
+        
+        bufferSize = 3 * 4 * 4 * 4
+        ffi.memmove(
+            dest = _frame.uniformBufferWriteLocation, 
+            src = flattened_data, n = bufferSize
+        )
+
+        i = 0
+        for position in _scene.triangle_positions:
+            
+            _frame.modelTransforms[i] = pyrr.matrix44.create_from_translation(
+                vec = position, dtype = np.float32
+            )
+            i += 1
+        
+        for position in _scene.square_positions:
+            
+            _frame.modelTransforms[i] = pyrr.matrix44.create_from_translation(
+                vec = position, dtype = np.float32
+            )
+            i += 1
+        
+        for position in _scene.star_positions:
+            
+            _frame.modelTransforms[i] = pyrr.matrix44.create_from_translation(
+                vec = position, dtype = np.float32
+            )
+            i += 1
+        
+        flattened_data = _frame.modelTransforms.astype("f").tobytes()
+        
+        bufferSize = i * 16 * 4
+        ffi.memmove(
+            dest = _frame.modelBufferWriteLocation, 
+            src = flattened_data, n = bufferSize
+        )
+
+        _frame.write_descriptor_set(self.device)
+
+    def prepare_scene(self, commandBuffer):
+        """
+            Preparar cena para renderizar
+        """
+        #vincular buffers de vertice em uma lista de buffers
+        vkCmdBindVertexBuffers(
+            commandBuffer = commandBuffer, firstBinding = 0,
+            bindingCount = 1, pBuffers = (self.meshes.vertexBuffer.buffer,),
+            pOffsets = (0,)
+        )
+
+        #vincular o buffer de indice
+        #precisamos vincular os buffers de vertice e de indice
+        # para que possamos nos referir adequadamente a cada um deles
+        vkCmdBindIndexBuffer(
+            commandBuffer = commandBuffer, buffer = self.meshes.indexBuffer.buffer,
+            offset = 0, indexType =  VK_INDEX_TYPE_UINT32
+        )
+
+    def record_draw_commands(self, commandBuffer, imageIndex, _scene: scene.Scene):
 
         """
         Etapas para gravar os comandos de desenho no buffer de comando:
@@ -239,13 +473,22 @@ class Engine:
         try:
             vkBeginCommandBuffer(commandBuffer, beginInfo)
         except:
-            logging.logger.print(f"{FAIL}Falha ao iniciar o buffer de comando de gravação{RESET}")
+            vklogging.logger.print(f"{FAIL}Falha ao iniciar o buffer de comando de gravação{RESET}")
 
         #configura as informações da renderpass, incluindo a área de renderização e o framebuffer
         renderpassInfo = VkRenderPassBeginInfo(
             renderPass = self.renderpass,
             framebuffer = self.swapchainFrames[imageIndex].framebuffer,
             renderArea = [[0,0], self.swapchainExtent]
+        )
+
+        vkCmdBindDescriptorSets(
+            commandBuffer=commandBuffer, 
+            pipelineBindPoint=VK_PIPELINE_BIND_POINT_GRAPHICS,
+            layout = self.pipelineLayout,
+            firstSet = 0, descriptorSetCount = 1, 
+            pDescriptorSets=[self.swapchainFrames[imageIndex].descriptorSet,],
+            dynamicOffsetCount = 0, pDynamicOffsets=[0,]
         )
 
         #define o valor de limpeza da tela para cada quadro (limpa com a cor especificada)
@@ -261,34 +504,26 @@ class Engine:
         #a partir deste ponto, todas as operações seguirão as configurações definidas no pipeline.
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, self.pipeline)
 
-        #iterar sobre cada posição dos triângulos definidos na cena.
-        for position in scene.triangle_positions:
 
-            #criar a matriz de transformação do modelo com base na posição do triângulo.
-            #essa matriz será usada para aplicar uma translação ao triângulo, posicionando-o corretamente.
-            model_transform = pyrr.matrix44.create_from_translation(vec = position, dtype = np.float32)
-
-            #converter a matriz de transformação para um formato adequado ao Vulkan (ponteiro para float).
-            #objData = ffi.cast("float *", model_transform.ctypes.data)
-            #objData = ffi.cast("float *", ffi.from_buffer(model_transform))
-            
-            objData = ffi.cast("float *", ffi.from_buffer(model_transform))
-
-            #enviar os dados de transformação para o shader de vértice usando push constants.
-            #objData = ffi.cast("float *", model_transform.__array_interface__["data"][0])
-            vkCmdPushConstants(
-                commandBuffer=commandBuffer, layout = self.pipelineLayout,
-                stageFlags = VK_SHADER_STAGE_VERTEX_BIT, offset = 0,
-                size = 4 * 4 * 4, pValues = objData
-            )
-            #emitir o comando de desenho para renderizar 3 vértices (um triângulo) no buffer de comando.
-            #cada triângulo será desenhado com a transformação aplicada.
-            vkCmdDraw(
-                commandBuffer = commandBuffer, vertexCount = 3, 
-                instanceCount = 1, firstVertex = 0, firstInstance = 0
-            )
+        #preparar cena para desenhar o vertex_menagerie
+        self.prepare_scene(commandBuffer)
+        firstInstance = 0
         
+        #desenha triangulo 2d
+        firstInstance = self.render_objects(
+            commandBuffer, TRIANGLE, firstInstance, len(_scene.triangle_positions)
+        )
+        
+        #desenha cubo 2d
+        firstInstance = self.render_objects(
+            commandBuffer, SQUARE, firstInstance, len(_scene.square_positions)
+        )
 
+        #desenha estrela 2d
+        firstInstance = self.render_objects(
+            commandBuffer, STAR, firstInstance, len(_scene.star_positions)
+        )
+            
         #finalizar a renderpass
         vkCmdEndRenderPass(commandBuffer)
 
@@ -296,9 +531,25 @@ class Engine:
         try:
             vkEndCommandBuffer(commandBuffer)
         except:
-            logging.logger.print(f"{FAIL}Falha ao terminar o buffer de comando de gravação{RESET}")
+            vklogging.logger.print(f"{FAIL}Falha ao terminar o buffer de comando de gravação{RESET}")
 
-    def render(self, scene):
+    def render_objects(
+        self, commandBuffer, objectType: int, firstInstance: int, instanceCount: int) -> int:
+
+        self.materials[objectType].use(commandBuffer, self.pipelineLayout)
+
+        firstIndex = self.meshes.firstIndices[objectType]
+        indexCount = self.meshes.indexCounts[objectType]
+        vkCmdDrawIndexed(
+            commandBuffer = commandBuffer, 
+            indexCount = indexCount, instanceCount = instanceCount, 
+            firstIndex = firstIndex, vertexOffset = 0,
+            firstInstance = firstInstance
+        )
+        
+        return firstInstance + instanceCount
+
+    def render(self, _scene: scene.Scene):
 
         #procedimentos de instância de captura
         vkAcquireNextImageKHR = vkGetDeviceProcAddr(self.device, 'vkAcquireNextImageKHR')
@@ -327,7 +578,7 @@ class Engine:
                 semaphore = self.swapchainFrames[self.frameNumber].imageAvailable, fence = VK_NULL_HANDLE
             )
         except:
-            logging.logger.print("recriar a cadeia de troca")
+            vklogging.logger.print("recriar a cadeia de troca")
             self.recreate_swapchain()
             return
         
@@ -335,9 +586,10 @@ class Engine:
         commandBuffer = self.swapchainFrames[self.frameNumber].commandbuffer
         vkResetCommandBuffer(commandBuffer = commandBuffer, flags = 0)
 
-        # Grava os comandos de desenho no buffer de comando para o índice de imagem obtido.
+        self.prepare_frame(imageIndex, _scene)
+                # Grava os comandos de desenho no buffer de comando para o índice de imagem obtido.
         # Isso inclui comandos de renderização, configuração de estados e envio dos dados da cena.
-        self.record_draw_commands(commandBuffer, imageIndex, scene)
+        self.record_draw_commands(commandBuffer, imageIndex, _scene)
 
         # Configura as informações necessárias para submeter os comandos à fila gráfica.
         # Isso inclui sincronizar com o semáforo 'imageAvailable' e sinalizar o semáforo 'renderFinished'
@@ -357,7 +609,7 @@ class Engine:
                 pSubmits = submitInfo, fence = self.swapchainFrames[self.frameNumber].inFlight
             )
         except:
-            logging.logger.print("Falha ao enviar comandos de desenho")
+            vklogging.logger.print("Falha ao enviar comandos de desenho")
             self.recreate_swapchain()
             return
 
@@ -375,7 +627,7 @@ class Engine:
         try:
             vkQueuePresentKHR(self.presentQueue, presentInfo)
         except:
-            logging.logger.print("recriar a cadeia de troca")
+            vklogging.logger.print("recriar a cadeia de troca")
             self.recreate_swapchain()
             return
         
@@ -397,13 +649,43 @@ class Engine:
             vkDestroySemaphore(self.device, frame.imageAvailable, None)
             vkDestroySemaphore(self.device, frame.renderFinished, None)
         
+            vkUnmapMemory(
+                device = self.device, 
+                memory = frame.uniformBuffer.buffer_memory)
+            vkFreeMemory(
+                device = self.device,
+                memory = frame.uniformBuffer.buffer_memory,
+                pAllocator = None
+            )
+            vkDestroyBuffer(
+                device = self.device,
+                buffer = frame.uniformBuffer.buffer,
+                pAllocator = None
+            )
+
+            vkUnmapMemory(
+                device = self.device, 
+                memory = frame.modelBuffer.buffer_memory)
+            vkFreeMemory(
+                device = self.device,
+                memory = frame.modelBuffer.buffer_memory,
+                pAllocator = None
+            )
+            vkDestroyBuffer(
+                device = self.device,
+                buffer = frame.modelBuffer.buffer,
+                pAllocator = None
+            )
+
+        vkDestroyDescriptorPool(self.device, self.descriptorPool, None)
+
         destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
         destructionFunction(self.device, self.swapchain, None)
 
     def close(self):    
         vkDeviceWaitIdle(self.device)
 
-        logging.logger.print(f"{HEADER}\nAté logo!\n{RESET}")
+        vklogging.logger.print(f"{HEADER}\nAté logo!\n{RESET}")
 
         vkDestroyCommandPool(self.device, self.commandPool, None)
 
@@ -412,14 +694,24 @@ class Engine:
         vkDestroyRenderPass(self.device, self.renderpass, None)
         
         self.cleanup_swapchain()
+
+        vkDestroyDescriptorSetLayout(
+            self.device, 
+            self.frameDescriptorSetLayout, 
+            None
+        )
+
+        self.meshes.destroy()
         
+        for _,material in self.materials:
+            material.destroy()
         vkDestroyDevice(
             device = self.device, pAllocator = None
         )
         
         destructionFunction = vkGetInstanceProcAddr(self.instance, "vkDestroySurfaceKHR")
         destructionFunction(self.instance, self.surface, None)
-        if logging.logger.debug_mode:
+        if vklogging.logger.debug_mode:
             #fetch destruction function
             destructionFunction = vkGetInstanceProcAddr(self.instance, 'vkDestroyDebugReportCallbackEXT')
 
@@ -441,5 +733,5 @@ class Engine:
         """
         vkDestroyInstance(self.instance, None)
 
-	    #terminate glfw
+        #terminate glfw
         glfw.terminate()
