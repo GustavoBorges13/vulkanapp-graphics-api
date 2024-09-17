@@ -20,17 +20,10 @@ class SwapChainBundle:
         self.format = None
         self.extent = None
 
-        #ESTRUTURA DE SUPORTE
-def query_swapchain_support(instance, physicalDevice, surface, debug):
-
-    support = SwapChainSupportDetails()
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR = vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR")
-
-    support.capabilities = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface)
-
-    if debug:
-        """
+#ESTRUTURA DE SUPORTE
+def query_swapchain_support(instance, physicalDevice, surface):
+        
+    """
         typedef struct VkSurfaceCapabilitiesKHR {
             uint32_t                         minImageCount;
             uint32_t                         maxImageCount;
@@ -43,86 +36,37 @@ def query_swapchain_support(instance, physicalDevice, surface, debug):
             VkCompositeAlphaFlagsKHR         supportedCompositeAlpha;
             VkImageUsageFlags                supportedUsageFlags;
         } VkSurfaceCapabilitiesKHR;
-        """
-        print(f"{HEADER}O Swapchain (cadeia de troca) pode suportar os seguintes recursos de superfície:{RESET}")
+    """
 
-        print(f"{WARNING}\tcontagem mínima de imagens: {OKBLUE}{support.capabilities.minImageCount}{RESET}")
-        print(f"{WARNING}\tcontagem máxima de imagens: {OKBLUE}{support.capabilities.maxImageCount}{RESET}")
+    support = SwapChainSupportDetails()
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR = vkGetInstanceProcAddr(
+        instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"
+    )
+    support.capabilities = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface)
 
-        print(f"{UNDERLINE}{WARNING}\textensão atual:{RESET}")
-        """
-        typedef struct VkExtent2D {
-            uint32_t    width;
-            uint32_t    height;
-        } VkExtent2D;
-        """
+    logging.logger.log_surface_capabilities(support)
 
-        #mesmo tamanho do tamanho da janela glfw que criamos
-        #swapchains nao sao redimensionavel dinamicamente, ou seja, se minimizar ou maximizar uma janela
-        #teremos que recriar tudo, todo o pipeline grafico da cadeia de troca e tudo.
-        print(f"{OKBLUE}\t\twidth: {support.capabilities.currentExtent.width}{RESET}")
-        print(f"{OKBLUE}\t\theight: {support.capabilities.currentExtent.height}{RESET}")
+    vkGetPhysicalDeviceSurfaceFormatsKHR = vkGetInstanceProcAddr(
+        instance, 'vkGetPhysicalDeviceSurfaceFormatsKHR'
+    )
+    support.formats = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface)
 
-        print(f"{WARNING}\tminimum supported extent:{RESET}")
-        print(f"{OKBLUE}\t\twidth: {support.capabilities.minImageExtent.width}{RESET}")
-        print(f"{OKBLUE}\t\theight: {support.capabilities.minImageExtent.height}{RESET}")
+    logging.logger.print(f"\t{WARNING}combinações de formatos de pixel e espaços de cores suportados:{RESET}")
+    for supportedFormat in support.formats:
+        logging.logger.log_surface_format(supportedFormat)
 
-        print(f"{WARNING}\tmaximum supported extent:{RESET}")
-        print(f"{OKBLUE}\t\twidth: {support.capabilities.maxImageExtent.width}{RESET}")
-        print(f"{OKBLUE}\t\theight: {support.capabilities.maxImageExtent.height}{RESET}")
+    vkGetPhysicalDeviceSurfacePresentModesKHR = vkGetInstanceProcAddr(
+        instance, 'vkGetPhysicalDeviceSurfacePresentModesKHR'
+    )
+    support.presentModes = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface)
 
+    logging.logger.print(f"\t{WARNING}Modos de Apresentação Suportados:{RESET}")
+    logging.logger.log_list(support.presentModes)
 
-        print(f"{WARNING}\tmáximo de camadas de matriz de imagem: {OKBLUE}{support.capabilities.maxImageArrayLayers}{RESET}")
-
-        print(f"{WARNING}\ttransformações suportadas:{RESET}")
-        stringList = logging.log_transform_bits(support.capabilities.supportedTransforms)
-        for line in stringList:
-            print(f"{OKBLUE}\t\t{line}{RESET}")
-
-        print(f"{WARNING}\ttransformação atual:{RESET}")
-        stringList = logging.log_transform_bits(support.capabilities.currentTransform)
-        for line in stringList:
-            print(f"{OKBLUE}\t\t{line}{RESET}")
-
-        print(f"{WARNING}\toperações alfa suportadas:{RESET}")
-        stringList = logging.log_alpha_composite_bits(support.capabilities.supportedCompositeAlpha)
-        for line in stringList:
-            print(f"{OKBLUE}\t\t{line}{RESET}")
-
-        print(f"{WARNING}\tuso de imagem suportados:{RESET}")
-        stringList = logging.log_image_usage_bits(support.capabilities.supportedUsageFlags)
-        for line in stringList:
-            print(f"{OKBLUE}\t\t{line}{RESET}")
-
-        vkGetPhysicalDeviceSurfaceFormatsKHR = vkGetInstanceProcAddr(instance, 'vkGetPhysicalDeviceSurfaceFormatsKHR')
-        support.formats = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface)
-
-        if debug:
-            print(f"{WARNING}\tcombinações de formatos de pixel e espaços de cores suportados:{RESET}")
-            for supportedFormat in support.formats:
-                """
-                * typedef struct VkSurfaceFormatKHR {
-                    VkFormat           format;
-                    VkColorSpaceKHR    colorSpace;
-                } VkSurfaceFormatKHR;
-                """
-
-                print(f"{OKBLUE}\t\tformato de pixel suportado: {RESET}{logging.format_to_string(supportedFormat.format)}")
-                print(f"{OKBLUE}\t\tespaço de cores suportado: {RESET}{logging.colorspace_to_string(supportedFormat.colorSpace)}")
-
-        vkGetPhysicalDeviceSurfacePresentModesKHR = vkGetInstanceProcAddr(instance, 'vkGetPhysicalDeviceSurfacePresentModesKHR')
-
-        support.presentModes = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface)
-        print(f"{WARNING}\tmodos de apresentação suportados:{RESET}")
-        for presentMode in support.presentModes:
-            print(f"{OKBLUE}\t\t{logging.log_present_mode(presentMode)}{RESET}")
-
-        return support
-    
     return support
 
-#Sessao dos Formatos apropriados, apresentar modos e extensoes
 
+#Sessao dos Formatos apropriados, apresentar modos e extensoes
 #Escolhe os formatos apropriados
 def choose_swapchain_surface_format(formats):
 
@@ -159,10 +103,10 @@ def choose_swapchain_extent(width, height, capabilities):
 
     return extent
 
-def create_swapchain(instance, logicalDevice, physicalDevice, surface, width, height, debug):
+def create_swapchain(instance, logicalDevice, physicalDevice, surface, width, height):
 
     #usando as funcoes que criamos anteriormente...
-    support = query_swapchain_support(instance, physicalDevice, surface, debug)
+    support = query_swapchain_support(instance, physicalDevice, surface)
 
     format = choose_swapchain_surface_format(support.formats)
 
@@ -217,7 +161,7 @@ def create_swapchain(instance, logicalDevice, physicalDevice, surface, width, he
 
     Caso contrario, sera usado exclusivamente  por uma familia de filas e nao precisaremos definir tais parametros.
     """
-    indices = queue_families.find_queue_families(physicalDevice, instance, surface, debug)
+    indices = queue_families.find_queue_families(physicalDevice, instance, surface)
     queueFamilyIndices = [
         indices.graphicsFamily, indices.presentFamily
     ]

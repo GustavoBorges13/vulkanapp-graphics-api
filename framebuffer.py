@@ -1,5 +1,5 @@
 from config import *
-import frame
+import logging
 
 class framebufferInput:
     """
@@ -13,7 +13,7 @@ class framebufferInput:
         self.renderpass = None
         self.swapchainExtent = None
 
-def make_framebuffers(inputChunk, frames, debug):
+def make_framebuffers(inputChunk, frames):
     """
     Cria um framebuffer para cada quadro fornecido e o associa à entrada correspondente.
     """
@@ -35,10 +35,8 @@ def make_framebuffers(inputChunk, frames, debug):
                 inputChunk.device, framebufferInfo, None
             )
 
-            if debug:
-                print(f"{OKGREEN}Criou o framebuffer para o quadro {i}{RESET}")
+            logging.logger.print(f"{OKGREEN}Criou o framebuffer para o quadro {i}{RESET}")
             
         except:
 
-            if debug:
-                print(f"{FAIL}Falha ao criar o framebuffer para o quadro {i}{RESET}")
+            logging.logger.print(f"{FAIL}Falha ao criar o framebuffer para o quadro {i}{RESET}")

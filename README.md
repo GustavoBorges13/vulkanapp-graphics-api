@@ -230,7 +230,7 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 .
 ├── .gitignore                  # Git ignore file
 ├── app.py                      # Window glfw prepare
-├── colors.py                   # Color handling for print debugMode
+├── colors.py                   # Color handling for print debug_mode
 ├── commands.py                 # Command handling and execution
 ├── config.py                   # Python imports general
 ├── device.py                   # Device selection and management

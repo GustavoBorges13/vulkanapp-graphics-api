@@ -1,6 +1,6 @@
 from config import *
 import queue_families
-import frame
+import logging
 
 class commandPoolInputChunk:
     """
@@ -23,7 +23,7 @@ class commandbufferInputChunk:
         self.commandPool = None
         self.frames = None
 
-def make_command_pool(inputChunk, debug):
+def make_command_pool(inputChunk):
     
     #cria um pool de comandos Vulkan.
     #encontrar os índices das filas de comandos
@@ -31,7 +31,6 @@ def make_command_pool(inputChunk, debug):
         device = inputChunk.physicalDevice,
         instance = inputChunk.instance,
         surface = inputChunk.surface,
-        debug = debug
     )
 
     """
@@ -48,18 +47,20 @@ def make_command_pool(inputChunk, debug):
         commandPool = vkCreateCommandPool(
             inputChunk.device, poolInfo, None
         )
-
-        if debug:
-            print(f"{HEADER}Conjunto de comandos criado{RESET}")
-        
+        logging.logger.print(f"{HEADER}Conjunto de comandos criado{RESET}")
         return commandPool
     except:
-        if debug:
-            print(f"{FAIL}Falha ao criar o pool de comandos{RESET}")
-        
+        logging.logger.print(f"{FAIL}Falha ao criar o pool de comandos{RESET}")
         return None
     
-def make_command_buffers(inputChunk, debug):
+def make_frame_command_buffers(inputChunk: commandbufferInputChunk) -> None:
+
+    """
+        Cria buffers de comando para cada quadro.
+
+        Parâmetros:
+            inputChunk (commandBufferInputChunk): contém os vários objetos necessários.
+    """
     #cria buffers de comando Vulkan para cada quadro.
     allocInfo = VkCommandBufferAllocateInfo(
         commandPool = inputChunk.commandPool,
@@ -73,22 +74,30 @@ def make_command_buffers(inputChunk, debug):
         try:
             frame.commandbuffer = vkAllocateCommandBuffers(inputChunk.device, allocInfo)[0]
 
-            if debug:
-                print(f"{OKGREEN}Buffer de comando alocado para o quadro {i}{RESET}")
+            logging.logger.print(f"{OKGREEN}Buffer de comando alocado para o quadro {i}{RESET}")
         except:
-            if debug:
-                print(f"{FAIL}Falha ao alocar o buffer de comando para o quadro {i}{RESET}")
+            logging.logger.print(f"{FAIL}Falha ao alocar o buffer de comando para o quadro {i}{RESET}")
+
+    
+def make_command_buffer(inputChunk):
+    """
+        Crie um único buffer de comando para cada quadro.
+
+        Parâmetros:
+            inputChunk (commandBufferInputChunk): contém os vários objetos necessários.
+    """
+    allocInfo = VkCommandBufferAllocateInfo(
+        commandPool = inputChunk.commandPool,
+        level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        commandBufferCount = 1
+    )
 
     #alocar o buffer de comando principal
     try:
         commandbuffer = vkAllocateCommandBuffers(inputChunk.device, allocInfo)[0]
 
-        if debug:
-            print(f"{OKBLUE}Buffer de comando principal alocado{RESET}")
-        
+        logging.logger.print(f"{OKBLUE}Buffer de comando principal alocado{RESET}")
         return commandbuffer
     except:
-        if debug:
-            print(f"{FAIL}Failed to allocate main command buffer{RESET}")
-        
+        logging.logger.print(f"{FAIL}Failed to allocate main command buffer{RESET}")
         return None

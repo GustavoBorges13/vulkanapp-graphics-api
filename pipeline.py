@@ -1,6 +1,7 @@
 from config import *
 import shaders
- 
+import logging
+
 class InputBundle:
     """
     Classe de entrada para encapsular os parâmetros necessários para criar um pipeline gráfico.
@@ -92,7 +93,7 @@ def create_pipeline_layout(device):
         pushConstantRangeCount = 1, pPushConstantRanges = [pushConstantInfo,],
         setLayoutCount = 0
     )
-    
+
     # Cria e retorna o layout do pipeline com as configurações de push constants
     return vkCreatePipelineLayout(
         device = device, pCreateInfo = pipelineLayoutInfo, pAllocator = None
@@ -104,7 +105,7 @@ A função create_graphics_pipeline cria um pipeline gráfico completo,
 incluindo shaders, estados fixos (como a viewport, rasterizador e blending),
 e associa o pipeline ao layout e à render pass.
 """
-def create_graphics_pipeline(inputBundle, debug):
+def create_graphics_pipeline(inputBundle):
 
     # Sem descrição de entrada de vértices, pois não estamos passando dados de vértices (apenas um triângulo por exemplo)
     vertexInputInfo = VkPipelineVertexInputStateCreateInfo(
@@ -114,8 +115,7 @@ def create_graphics_pipeline(inputBundle, debug):
     )
 
     # Carregar e configurar o shader de vértices
-    if (debug):
-        print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.vertexFilepath}{RESET}")
+    logging.logger.print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.vertexFilepath}{RESET}")
     vertexShaderModule = shaders.create_shader_module(inputBundle.device, inputBundle.vertexFilepath)
     vertexShaderStageInfo = VkPipelineShaderStageCreateInfo(
             sType=VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -176,8 +176,7 @@ def create_graphics_pipeline(inputBundle, debug):
     )
 
     #O sombreador de fragmentos carrega os fragmentos do rasterizador e os colore apropriadamente
-    if (debug):
-        print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.fragmentFilepath}{RESET}")
+    logging.logger.print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.fragmentFilepath}{RESET}")
     fragmentShaderModule = shaders.create_shader_module(inputBundle.device, inputBundle.fragmentFilepath)
     fragmentShaderStageInfo = VkPipelineShaderStageCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,

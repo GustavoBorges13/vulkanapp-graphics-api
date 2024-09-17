@@ -3,7 +3,6 @@ import instance
 import logging
 import device
 import swapchain
-import frame
 import pipeline
 import framebuffer
 import commands
@@ -13,12 +12,9 @@ import sync
 
 class Engine:
 
-    def __init__(self, width, height, window, glfw_title_name, debugMode):
+    def __init__(self, width, height, window, glfw_title_name):
         #nome da janela glfw 
         self.glfw_title_name = glfw_title_name
-
-        #se deve imprimir mensagens de depuração em funções
-        self.debugMode = debugMode
 
         #parâmetros da janela glfw
         self.width = width
@@ -26,8 +22,7 @@ class Engine:
 
         self.window = window
 
-        if self.debugMode:
-            print(f"{HEADER}:: Criar um motor gráfico{RESET}")
+        logging.logger.print(f"{HEADER}:: Criar um motor gráfico (ENGINE){RESET}")
 
         self.make_instance()
         self.make_device()
@@ -36,10 +31,10 @@ class Engine:
   
     def make_instance(self):
         #cria uma instância do Vulkan, que é a base para qualquer aplicação Vulkan.
-        self.instance = instance.make_instance(self.debugMode, self.glfw_title_name)
+        self.instance = instance.make_instance(self.glfw_title_name)
 
         #se o modo de depuração estiver ativado, cria o mensageiro de depuração
-        if self.debugMode:
+        if logging.logger.debug_mode:
             self.debugMessenger = logging.make_debug_messenger(self.instance)
 
         #criar a superfície de renderização a partir da janela GLFW.
@@ -55,10 +50,9 @@ class Engine:
                 surface = c_style_surface
             ) != VK_SUCCESS
         ):
-            if self.debugMode:
-                print(f"{FAIL}Falha ao abstrair a superfície do glfw para o Vulkan{RESET}")
-        elif self.debugMode:
-            print(f"{OKGREEN}Sucesso na abstração da superfície do glfw para o Vulkan{RESET}")
+            logging.logger.print(f"{FAIL}Falha ao criar a superfície da janela com GLFW para o Vulkan{RESET}")
+        else:
+            logging.logger.print(f"{OKGREEN}Superfície (surface) da janela criada com sucesso e vinculada ao Vulkan{RESET}")
 
         #armazena a superfície criada no objeto.
         self.surface = c_style_surface[0]
@@ -66,13 +60,13 @@ class Engine:
     def make_device(self):
 
         #escolhe o dispositivo físico (GPU) adequado para a aplicação, com base nos critérios fornecidos
-        self.physicalDevice = device.choose_physical_device(self.instance, self.debugMode)
+        self.physicalDevice = device.choose_physical_device(self.instance)
         
 
         #envolve a gpu em um dispositivo logico para podermos nos comunicar com ele
-            #device.find_queue_families(self.physicalDevice, self.debugMode)
+            #device.find_queue_families(self.physicalDevice, self.debug_mode)
         self.device = device.create_logical_device(
-            self.physicalDevice, self.instance, self.surface, self.debugMode)
+            self.physicalDevice, self.instance, self.surface)
 
         #obtém as filas de gráficos e de apresentação do dispositivo lógico
         #essas filas são necessárias para enviar comandos de renderização e apresentação de imagens
@@ -81,17 +75,26 @@ class Engine:
             logicalDevice = self.device, 
             instance = self.instance, 
             surface = self.surface,
-            debug = self.debugMode
         )
         self.graphicsQueue = queues[0]
         self.presentQueue = queues[1]
 
+        #cria swapchain (cadeia de trocas)
+        self.make_swapchain()
+
+        self.frameNumber = 0
+
+    def make_swapchain(self):
+        """
+            Cria a cadeia de troca do mecanismo; observe que isso criará imagens e visualizações de imagens, mas não criará quadros prontos para renderização.
+            e visualizações de imagem, mas não deixará os quadros prontos para renderização.
+        """
         #device.query_swapchain_support(self.instance, self.physicalDevice, self.surface, True)
         #criação do swapchain, que gerencia a troca de buffers de renderização (quadros) com a tela
         #ele é essencial para desenhar e apresentar imagens na tela em Vulkan
         bundle = swapchain.create_swapchain(
             self.instance, self.device, self.physicalDevice, self.surface,
-            self.width, self.height, self.debugMode
+            self.width, self.height
         )
 
         #atribui os recursos criados pelo swapchain ao objeto atual
@@ -100,7 +103,25 @@ class Engine:
         self.swapchainFormat = bundle.format
         self.swapchainExtent = bundle.extent
         self.maxFramesInFlight = len(self.swapchainFrames)
-        self.frameNumber = 0
+
+    def recreate_swapchain(self):
+        """
+            Destruir a cadeia de troca atual e, em seguida, reconstruir uma nova cadeia
+        """
+
+        self.width = 0
+        self.height = 0
+        while (self.width == 0 or self.height == 0):
+            self.width, self.height = glfw.get_window_size(self.window)
+            glfw.wait_events()
+
+        vkDeviceWaitIdle(self.device)
+        self.cleanup_swapchain()
+
+        self.make_swapchain()
+        self.make_framebuffers()
+        self.make_frame_command_buffers()
+        self.make_frame_sync_objects()
 
     def make_pipeline(self):
 
@@ -114,43 +135,41 @@ class Engine:
         )
 
         #criação do pipeline gráfico utilizando o pacote de entrada
-        outputBundle = pipeline.create_graphics_pipeline(inputBundle, self.debugMode)
+        outputBundle = pipeline.create_graphics_pipeline(inputBundle)
 
         #configuração do layout do pipeline, renderpass e pipeline em si a partir do bundle de saída   
         self.pipelineLayout = outputBundle.pipelineLayout
         self.renderpass = outputBundle.renderPass
         self.pipeline = outputBundle.pipeline        
 
-    def finalize_setup(self):
-
+    def make_framebuffers(self):
+        """
+            Cria um framebuffer para cada quadro na cadeia de troca.
+        """
         #frame buffers
         framebufferInput = framebuffer.framebufferInput()
         framebufferInput.device = self.device
         framebufferInput.renderpass = self.renderpass
         framebufferInput.swapchainExtent = self.swapchainExtent
         framebuffer.make_framebuffers(
-            framebufferInput, self.swapchainFrames, self.debugMode
+            framebufferInput, self.swapchainFrames
         )
 
-        #piscina de comandos -> command pools
-        commandPoolInput = commands.commandPoolInputChunk()
-        commandPoolInput.device = self.device
-        commandPoolInput.physicalDevice = self.physicalDevice
-        commandPoolInput.surface = self.surface
-        commandPoolInput.instance = self.instance
-        self.commandPool = commands.make_command_pool(
-            commandPoolInput, self.debugMode
-        )
-
+    def make_frame_command_buffers(self):
+        """
+            Crie um buffer de comando para cada quadro na cadeia de troca.
+        """
         #alocar um monte de buffers de comando
         commandbufferInput = commands.commandbufferInputChunk()
         commandbufferInput.device = self.device
         commandbufferInput.commandPool = self.commandPool
-        commandbufferInput.frames = self.swapchainFrames
-        self.mainCommandbuffer = commands.make_command_buffers(
-            commandbufferInput, self.debugMode
-        )
+        commandbufferInput.frames = self.swapchainFrames 
+        commands.make_frame_command_buffers(commandbufferInput)
 
+    def make_frame_sync_objects(self):
+        """
+            Crie os semáforos e as cercas necessárias para renderizar cada quadro.
+        """
         """
         Primitivos de sincronização  (singlethreading)
         - inFlightFence: Usado para garantir que as operações de renderização estejam concluídas antes de avançar para o próximo quadro.
@@ -161,9 +180,9 @@ class Engine:
         Não podemos apresentar uma imagem até que ela tenha sido processada corretamente, e a sincronização é feita de maneira linear no ciclo de renderização.
         """
         #singleThread enderind
-        #self.inFlightFence = sync.make_fence(self.device, self.debugMode)
-        #self.imageAvailable = sync.make_semaphore(self.device, self.debugMode)
-        #self.renderFinished = sync.make_semaphore(self.device, self.debugMode)
+        #self.inFlightFence = sync.make_fence(self.device, self.debug_mode)
+        #self.imageAvailable = sync.make_semaphore(self.device, self.debug_mode)
+        #self.renderFinished = sync.make_semaphore(self.device, self.debug_mode)
 
         """
         Primitivos de sincronização (multithreading)
@@ -174,11 +193,36 @@ class Engine:
         Como agora estamos no contexto multithreading, cada quadro do swapchain possui seus próprios semáforos e fences, permitindo que múltiplos quadros sejam renderizados simultaneamente em threads diferentes, se necessário.
         Não podemos apresentar uma imagem até que ela tenha sido processada corretamente e a sincronização entre as threads garante que isso seja feito de forma ordenada.
         """
-        #smultithreading renderind
+        #multithreading rendering
+        #criacao do objeto de sincronizacao -> semaforos e cercas (fences)
         for frame in self.swapchainFrames:
-            frame.inFlight = sync.make_fence(self.device, self.debugMode)
-            frame.imageAvailable = sync.make_semaphore(self.device, self.debugMode)
-            frame.renderFinished = sync.make_semaphore(self.device, self.debugMode)
+            frame.inFlight = sync.make_fence(self.device)
+            frame.imageAvailable = sync.make_semaphore(self.device)
+            frame.renderFinished = sync.make_semaphore(self.device)
+
+    def finalize_setup(self):
+
+        #cria framebuffers
+        self.make_framebuffers()
+
+        #piscina de comandos -> command pools
+        commandPoolInput = commands.commandPoolInputChunk()
+        commandPoolInput.device = self.device
+        commandPoolInput.physicalDevice = self.physicalDevice
+        commandPoolInput.surface = self.surface
+        commandPoolInput.instance = self.instance
+        self.commandPool = commands.make_command_pool(commandPoolInput)
+
+        #alocar um monte de buffers de comando
+        commandbufferInput = commands.commandbufferInputChunk()
+        commandbufferInput.device = self.device
+        commandbufferInput.commandPool = self.commandPool
+        commandbufferInput.frames = self.swapchainFrames
+        self.mainCommandbuffer = commands.make_command_buffer(commandbufferInput)
+        commands.make_frame_command_buffers(commandbufferInput)
+
+        #criacao do objeto de sincronizacao -> semaforos e cercas (fences)
+        self.make_frame_sync_objects()
 
     def record_draw_commands(self, commandBuffer, imageIndex, scene):
 
@@ -195,8 +239,7 @@ class Engine:
         try:
             vkBeginCommandBuffer(commandBuffer, beginInfo)
         except:
-            if self.debugMode:
-                print(f"{FAIL}Falha ao iniciar o buffer de comando de gravação{RESET}")
+            logging.logger.print(f"{FAIL}Falha ao iniciar o buffer de comando de gravação{RESET}")
 
         #configura as informações da renderpass, incluindo a área de renderização e o framebuffer
         renderpassInfo = VkRenderPassBeginInfo(
@@ -253,72 +296,13 @@ class Engine:
         try:
             vkEndCommandBuffer(commandBuffer)
         except:
-            if self.debugMode:
-                print(f"{FAIL}Falha ao terminar o buffer de comando de gravação{RESET}")
+            logging.logger.print(f"{FAIL}Falha ao terminar o buffer de comando de gravação{RESET}")
 
     def render(self, scene):
 
         #procedimentos de instância de captura
         vkAcquireNextImageKHR = vkGetDeviceProcAddr(self.device, 'vkAcquireNextImageKHR')
         vkQueuePresentKHR = vkGetDeviceProcAddr(self.device, 'vkQueuePresentKHR')
-
-        """
-        (singlethreading)
-
-        #verificar se o caminho esta aberto
-        #verifica se a cerca (fence) está sinalizada, garantindo que o processamento do quadro anterior foi concluído.
-        vkWaitForFences(
-            device = self.device, fenceCount = 1, pFences = [self.inFlightFence,], 
-            waitAll = VK_TRUE, timeout = 1000000000
-        ) # Timeout em nanosegundos (1 segundo)
-
-        #reseta a fence para ser usada no próximo quadro
-        vkResetFences(
-            device = self.device, fenceCount = 1, pFences = [self.inFlightFence,]
-        )
-
-        #adquire o próximo índice de imagem do swapchain. Isso bloqueia até que a imagem esteja disponível
-        # ou o timeout seja atingido. O semáforo `imageAvailable` será sinalizado quando a imagem estiver disponível.
-        imageIndex = vkAcquireNextImageKHR(
-            device = self.device, swapchain = self.swapchain, timeout = 1000000000, 
-            semaphore = self.imageAvailable, fence = VK_NULL_HANDLE
-        )
-
-        #resetar o buffer de comando para o quadro atual
-        commandBuffer = self.swapchainFrames[imageIndex].commandbuffer
-        vkResetCommandBuffer(commandBuffer = commandBuffer, flags = 0)
-
-        #grava os comandos de desenho no buffer de comando
-        self.record_draw_commands(commandBuffer, imageIndex)
-
-        #configurar as informações para submissão dos comandos à fila gráfica
-        submitInfo = VkSubmitInfo(
-            waitSemaphoreCount = 1, pWaitSemaphores = [self.imageAvailable,], 
-            pWaitDstStageMask=[VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,],
-            commandBufferCount = 1, pCommandBuffers = [commandBuffer,], signalSemaphoreCount = 1,
-            pSignalSemaphores = [self.renderFinished,]
-        )
-
-        #submete o comando de desenho à fila gráfica e usa a fence para sincronização
-        try:
-            vkQueueSubmit(
-                queue = self.graphicsQueue, submitCount = 1, 
-                pSubmits = submitInfo, fence = self.inFlightFence
-            )
-        except:
-            if self.debugMode:
-                print("Falha ao enviar comandos de desenho")
-
-        #configurar e realizar a apresentação da imagem renderizada
-        presentInfo = VkPresentInfoKHR(
-            waitSemaphoreCount = 1, pWaitSemaphores = [self.renderFinished,],
-            swapchainCount = 1, pSwapchains = [self.swapchain,],
-            pImageIndices = [imageIndex,]
-        )
-
-        #apresenta a imagem à fila de apresentação
-        vkQueuePresentKHR(self.presentQueue, presentInfo)
-        """
         
         # (multithreading)
         # Sincronização inicial: verifica se o quadro anterior já foi processado completamente.
@@ -337,11 +321,16 @@ class Engine:
         # Adquire o índice da próxima imagem disponível do swapchain para renderização.
         # Essa operação é bloqueante até que a imagem esteja disponível ou o timeout seja atingido.
         # O semáforo 'imageAvailable' será sinalizado quando a imagem estiver pronta.
-        imageIndex = vkAcquireNextImageKHR(
-            device = self.device, swapchain = self.swapchain, timeout = 1000000000, 
-            semaphore = self.swapchainFrames[self.frameNumber].imageAvailable, fence = VK_NULL_HANDLE
-        )
-
+        try:
+            imageIndex = vkAcquireNextImageKHR(
+                device = self.device, swapchain = self.swapchain, timeout = 1000000000, 
+                semaphore = self.swapchainFrames[self.frameNumber].imageAvailable, fence = VK_NULL_HANDLE
+            )
+        except:
+            logging.logger.print("recriar a cadeia de troca")
+            self.recreate_swapchain()
+            return
+        
         # Reseta o comando de buffer associado ao frame atual para preparar novos comandos de desenho.
         commandBuffer = self.swapchainFrames[self.frameNumber].commandbuffer
         vkResetCommandBuffer(commandBuffer = commandBuffer, flags = 0)
@@ -368,8 +357,10 @@ class Engine:
                 pSubmits = submitInfo, fence = self.swapchainFrames[self.frameNumber].inFlight
             )
         except:
-            if self.debugMode:
-                print("Falha ao enviar comandos de desenho")
+            logging.logger.print("Falha ao enviar comandos de desenho")
+            self.recreate_swapchain()
+            return
+
 
         # Configura as informações necessárias para a apresentação da imagem.
         # Isso inclui garantir que a imagem só será apresentada após o semáforo 'renderFinished' ser sinalizado,
@@ -381,21 +372,20 @@ class Engine:
         )
 
         # Apresenta a imagem renderizada na fila de apresentação (tipicamente, na tela).
-        vkQueuePresentKHR(self.presentQueue, presentInfo)
+        try:
+            vkQueuePresentKHR(self.presentQueue, presentInfo)
+        except:
+            logging.logger.print("recriar a cadeia de troca")
+            self.recreate_swapchain()
+            return
         
         # Atualiza o índice do frame para que o próximo ciclo de renderização use o próximo conjunto de buffers.
         self.frameNumber = (self.frameNumber + 1) % self.maxFramesInFlight
 
-    def close(self):
-        vkDeviceWaitIdle(self.device)
-
-        if self.debugMode:
-            print(f"{HEADER}\nAté logo!\n{RESET}")
-
-        vkDestroyCommandPool(self.device, self.commandPool, None)
-        vkDestroyPipeline(self.device, self.pipeline, None)
-        vkDestroyPipelineLayout(self.device, self.pipelineLayout, None)
-        vkDestroyRenderPass(self.device, self.renderpass, None)
+    def cleanup_swapchain(self):
+        """
+            Libere a memória alocada para cada quadro e destrua a cadeia de troca.
+        """
         for frame in self.swapchainFrames:
             vkDestroyImageView(
                 device = self.device, imageView = frame.image_view, pAllocator = None
@@ -403,20 +393,36 @@ class Engine:
             vkDestroyFramebuffer(
                 device = self.device, framebuffer = frame.framebuffer, pAllocator = None
             )
-            #Para renderização multithread, use este
             vkDestroyFence(self.device, frame.inFlight, None)
             vkDestroySemaphore(self.device, frame.imageAvailable, None)
             vkDestroySemaphore(self.device, frame.renderFinished, None)
+        
         destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
         destructionFunction(self.device, self.swapchain, None)
+
+    def close(self):    
+        vkDeviceWaitIdle(self.device)
+
+        logging.logger.print(f"{HEADER}\nAté logo!\n{RESET}")
+
+        vkDestroyCommandPool(self.device, self.commandPool, None)
+
+        vkDestroyPipeline(self.device, self.pipeline, None)
+        vkDestroyPipelineLayout(self.device, self.pipelineLayout, None)
+        vkDestroyRenderPass(self.device, self.renderpass, None)
+        
+        self.cleanup_swapchain()
+        
         vkDestroyDevice(
             device = self.device, pAllocator = None
         )
+        
         destructionFunction = vkGetInstanceProcAddr(self.instance, "vkDestroySurfaceKHR")
         destructionFunction(self.instance, self.surface, None)
-        if self.debugMode:
-            #função de destruição de busca
+        if logging.logger.debug_mode:
+            #fetch destruction function
             destructionFunction = vkGetInstanceProcAddr(self.instance, 'vkDestroyDebugReportCallbackEXT')
+
             """
                 def vkDestroyDebugReportCallbackEXT(
                     instance
@@ -434,6 +440,6 @@ class Engine:
             )
         """
         vkDestroyInstance(self.instance, None)
-        
-	    #encerrar o glfw
+
+	    #terminate glfw
         glfw.terminate()
