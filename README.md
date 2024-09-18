@@ -227,41 +227,34 @@ Once the application is running, a window will open displaying a 3D cube. The cu
 ## 🗂️ Project Structure 
 
 ```bash
-C:.
+.
 ├── .gitignore                  # Git ignore file
-├── app.py                      # Window GLFW preparation
-├── colors.py                   # Color handling for print and debug
+├── app.py                      # Window glfw prepare
+├── colors.py                   # Color handling for print debugMode
 ├── commands.py                 # Command handling and execution
-├── config.py                   # General Python configurations and imports
-├── descriptors.py              # Descriptor sets and layouts for Vulkan
-├── device.py                   # Device selection and management (Vulkan)
+├── config.py                   # Python imports general
+├── device.py                   # Device selection and management
 ├── docker-commands.md          # Docker commands and setup instructions
 ├── docker-compose.yml          # Docker Compose configuration
 ├── Dockerfile                  # Docker configuration for building the image
 ├── engine.py                   # Core engine logic for the application
 ├── frame.py                    # Frame handling for rendering
-├── framebuffer.py              # Framebuffer management (Vulkan)
-├── image.py                    # Image loading and handling
-├── instance.py                 # Vulkan instance creation and management
+├── framebuffer.py              # Framebuffer management
+├── instance.py                 # Vulkan instance creation
 ├── LICENSE                     # License file for the project
+├── logging.py                  # Logging utilities - Validation Layers
 ├── main.py                     # Main application to launch program
-├── memory.py                   # Memory management for Vulkan resources
-├── mesh.py                     # Mesh data handling and management
-├── pipeline.py                 # Pipeline configuration and management (Vulkan)
-├── queue_families.py           # Queue family management (Vulkan)
+├── pipeline.py                 # Pipeline configuration and management
+├── queue_families.py           # Queue families management for Vulkan
 ├── README.md                   # Project documentation and overview
 ├── requirements.txt            # Python dependencies
-├── scene.py                    # Scene management for rendering
-├── shaders.py                  # Shader management for Vulkan
-├── single_time_commands.py     # Handling one-time Vulkan commands
-├── swapchain.py                # Swapchain handling (Vulkan)
-├── sync.py                     # Synchronization primitives (Vulkan)
-├── vertex_menagerie.py         # Management of vertex data (vertex buffers)
-├── vklogging.py                # Vulkan-specific logging and debug utilities
+├── shaders.py                  # Shader management for rendering
+├── swapchain.py                # Swapchain handling for Vulkan
+├── sync.py                     # Synchronization primitives
 │
 ├── .github
 │   └── workflows
-│       └── Docker.yml          # GitHub Actions workflow for Docker
+│       └── Docker.yml          # GitHub Actions automatic workflow for Docker
 │
 ├── shaders                     # Shader files for the application
 │   ├── compile_shaders.bat     # Batch script to compile shaders
@@ -270,12 +263,7 @@ C:.
 │   ├── shader.vert             # Vertex shader source code
 │   └── vert.spv                # Compiled vertex shader
 │
-├── tex                         # Texture assets for rendering
-│   ├── cristal.jpg             # Crystal texture
-│   ├── grama.jpg               # Grass texture
-│   └── rocha.jpg               # Rock texture
-│
-└── __pycache__                 # Compiled Python bytecode files
+└── __pycache__                 # Compiled Python files
 ```
 <br>
 

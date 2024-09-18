@@ -5,8 +5,6 @@ class BufferInput:
     """
         Contém os objetos necessários para criar um vkBuffer
     """
-
-
     def __init__(self):
 
         self.size = None

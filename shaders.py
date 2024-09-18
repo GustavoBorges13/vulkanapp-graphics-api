@@ -1,4 +1,5 @@
 from config import *
+# https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html
 
 #verifica os arquivos shaders (.vert e .frag) compilados
 def read_shader_src(filename):

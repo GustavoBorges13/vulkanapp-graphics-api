@@ -1,5 +1,4 @@
 from config import *
-import vklogging
 
 class QueueFamilyIndices:
 
@@ -11,19 +10,20 @@ class QueueFamilyIndices:
         
         return not(self.graphicsFamily is None or self.presentFamily is None)
     
-def find_queue_families(device, instance, surface):
+def find_queue_families(device, instance, surface, debug):
 
         indices = QueueFamilyIndices()
         
         surfaceSupport = vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceSurfaceSupportKHR")
         
-        queueFamilies = vkGetPhysicalDeviceQueueFamilyProperties(device)
+        queuFamilies = vkGetPhysicalDeviceQueueFamilyProperties(device)
 
 
-        vklogging.logger.print(f"{WARNING}Há {len(queueFamilies)} famílias de filas disponíveis no sistema.{RESET}")
+        if debug:
+            print(f"{WARNING}Há {len(queuFamilies)} famílias de filas disponíveis no sistema.{RESET}")
 
         # Verificacao bit a bit para verificar se a fila suporta nossas operacoes graficas
-        for i, queueFamily in enumerate(queueFamilies):
+        for i, queueFamily in enumerate(queuFamilies):
 
             """
             // Provided by VK_VERSION_1_0
@@ -56,12 +56,14 @@ def find_queue_families(device, instance, surface):
             if queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT:
                 indices.graphicsFamily = i
 
-                vklogging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para gráficos.{RESET}")
+                if debug:
+                    print(f"{OKGREEN}A família de filas {i} é adequada para gráficos.{RESET}")
 
             if surfaceSupport(device, i, surface):
                 indices.presentFamily = i
 
-                vklogging.logger.print(f"{OKGREEN}A família de filas {i} é adequada para apresentar.{RESET}")
+                if debug:
+                    print(f"{OKGREEN}A família de filas {i} é adequada para apresentar.{RESET}")
 
             if indices.is_complete():
                 break

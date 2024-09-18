@@ -1,9 +1,8 @@
 from config import *
-import vklogging
 
 validationLayers = ["VK_LAYER_KHRONOS_validation"]
 
-def supported(extensions, layers):
+def supported(extensions, layers, debug):
 
     """
         ExtensionProperties( std::array<char, VK_MAX_EXTENSION_NAME_SIZE> const & extensionName_ = {},
@@ -12,34 +11,43 @@ def supported(extensions, layers):
     #verifica o suporte das extensões
     supportedExtensions = [extension.extensionName for extension in vkEnumerateInstanceExtensionProperties(None)]
 
-    vklogging.logger.print(f"{WARNING}O dispositivo pode suportar as seguintes extensões:{RESET}")
-    vklogging.logger.log_list(supportedExtensions)
+    if debug:
+        print(f"{WARNING}O dispositivo pode suportar as seguintes extensões:{RESET}")
+        for supportedExtension in supportedExtensions:
+            print(f"{GRAY_DARK}\t\"{supportedExtension}\"{RESET}")
     
     for extension in extensions:
         
         if extension in supportedExtensions:
-            vklogging.logger.print(f"{OKGREEN}Extensão \"{extension}\" é suportada!{RESET}")
+            if debug:
+                print(f"{OKGREEN}Extensão \"{extension}\" é suportada!{RESET}")
         else:
-            vklogging.logger.print(f"{WARNING}Extensão \"{extension}\" não é suportada!{RESET}")
+            if debug:
+                print(f"{WARNING}Extensão \"{extension}\" não é suportada!{RESET}")
             return False
 
     #verifica o suporte das camadas
     supportedLayers = [layer.layerName for layer in vkEnumerateInstanceLayerProperties()]
 
-    vklogging.logger.print(f"{WARNING}O dispositivo pode suportar as seguintes camadas:{RESET}")
-    vklogging.logger.log_list(supportedLayers)
+    if debug:
+        print(f"{WARNING}O dispositivo pode suportar as seguintes camadas:{RESET}")
+        for supportedLayer in supportedLayers:
+            print(f"{GRAY_DARK}\t\"{supportedLayer}\"{RESET}")
 
     for layer in layers:
         if layer in supportedLayers:
-            vklogging.logger.print(f"{OKGREEN}Camada \"{layer}\" é suportada!{RESET}")
+            if debug:
+                print(f"{OKGREEN}Camada \"{layer}\" é suportada!{RESET}")
         else:
-            vklogging.logger.print(f"{WARNING}Camada \"{layer}\" não é suportada!{RESET}")
+            if debug:
+                print(f"{WARNING}Camada \"{layer}\" não é suportada!{RESET}")
             return False
 
     return True
 
-def make_instance(applicationName):
-    vklogging.logger.print(f"{HEADER}:: Fazer uma instância...{RESET}")
+def make_instance(debug, applicationName):
+    if debug:
+        print(f"{HEADER}:: Fazer uma instância...{RESET}")
 
     """
         Uma instância armazena todas as informações de estado por aplicação, é um identificador Vulkan
@@ -53,7 +61,8 @@ def make_instance(applicationName):
     """
     version = vkEnumerateInstanceVersion()
     
-    vklogging.logger.print(
+    if debug:
+        print(
             f"{OKBLUE}O sistema pode suportar a variante vulkan: {version >> 29}\
             , Major: {VK_VERSION_MAJOR(version)}\
             , Minor: {VK_VERSION_MINOR(version)}\
@@ -90,7 +99,7 @@ def make_instance(applicationName):
         sType=VK_STRUCTURE_TYPE_APPLICATION_INFO,
         pApplicationName = applicationName,
         applicationVersion = version,
-        pEngineName = "VulkanEngine",
+        pEngineName = "Fazer as coisas da maneira mais difícil",
         engineVersion = version,
         apiVersion = version
     )
@@ -100,17 +109,23 @@ def make_instance(applicationName):
         para fazer interface com o Vulkan.
     """
     extensions = glfw.get_required_instance_extensions()
-    if vklogging.logger.debug_mode:
+    if debug:
         extensions.append(VK_EXT_DEBUG_REPORT_EXTENSION_NAME)
 
-    vklogging.logger.print(f"{HEADER}:: Extensões a solicitar:{RESET}")
-    vklogging.logger.log_list(extensions)
+    if debug:
+        print(f"{HEADER}:: Extensões a solicitar:{RESET}")
+
+        for extensionName in extensions:
+            print(f"{UNDERLINE}\t\" {extensionName}\"{RESET}")
     
     layers = []
-    if  vklogging.logger.debug_mode:
+    if debug:
+        print(f"{HEADER}:: Camadas a solicitar:{RESET}")
+        for layerName in validationLayers:
+            print(f"{UNDERLINE}\t\" {layerName}\"{RESET}")
         layers.extend(validationLayers)
 
-    supported(extensions, layers)
+    supported(extensions, layers, debug)
 
     """
         de _vulkan.py:
@@ -143,5 +158,6 @@ def make_instance(applicationName):
     try:
         return vkCreateInstance(createInfo, None)
     except:
-        vklogging.logger.print(f"{FAIL}Falha ao criar a instância!{RESET}")
+        if (debug):
+            print(f"{FAIL}Falha ao criar a instância!{RESET}")
         return None

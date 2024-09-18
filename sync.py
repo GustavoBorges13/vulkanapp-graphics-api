@@ -1,9 +1,8 @@
 from config import *
-import vklogging
 
-def make_semaphore(device):
+def make_semaphore(device, debug):
 
-     #cria as informações para o semáforo usando a estrutura VkSemaphoreCreateInfo
+    #cria as informações para o semáforo usando a estrutura VkSemaphoreCreateInfo
     semaphoreInfo = VkSemaphoreCreateInfo()
 
     try:
@@ -12,11 +11,12 @@ def make_semaphore(device):
     
     except:
 
-        vklogging.logger.print(f"{FAIL}Falha ao criar o semáforo{RESET}")
+        if debug:
+            print(f"{FAIL}Falha ao criar o semáforo{RESET}")
         
         return None
 
-def make_fence(device):
+def make_fence(device, debug):
 
     #cria as informações para a cerca, inicializando-a já sinalizada
     fenceInfo = VkFenceCreateInfo(
@@ -29,6 +29,7 @@ def make_fence(device):
     
     except:
 
-        vklogging.logger.print(f"{FAIL}Failed to create fence{RESET}")
+        if debug:
+            print(f"{FAIL}Failed to create fence{RESET}")
         
         return None

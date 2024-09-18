@@ -1,21 +1,15 @@
 from config import *
 import engine
-import scene
-import vklogging
 
 class App:
-
-
-    def __init__(self, width, height, glfw_title_name, debug_mode):
-
-        vklogging.logger.set_debug_mode(debug_mode)
+    
+    def __init__(self, width, height, glfw_title_name, debugMode):
 
         # Constrói a janela GLFW e inicializa a engine gráfica
-        self.build_glfw_window(width, height, glfw_title_name)
+        self.build_glfw_window(width, height, glfw_title_name, debugMode)
 
         # Inicializa o motor gráfico com parâmetros como dimensões e janela
-        self.graphicsEngine = engine.Engine(width, height, self.window, glfw_title_name)
-        self.scene = scene.Scene() #carrega a cena com grades de posicoes que cobrirá a tela
+        self.graphicsEngine = engine.Engine(width, height, self.window, glfw_title_name, debugMode)
         
         # Variáveis para cálculo do framerate
         self.lastTime = glfw.get_time()         # Tempo do último frame
@@ -23,7 +17,7 @@ class App:
         self.numFrames = 0                      # Contador de frames
         self.frameTime = 0                      # Tempo médio de um frame
 
-    def build_glfw_window(self, width, height, glfw_title_name):
+    def build_glfw_window(self, width, height, glfw_title_name, debugMode):
 
         #inicializar o glfw
         glfw.init()
@@ -32,16 +26,18 @@ class App:
         # Sem API de cliente (não cria contexto OpenGL por padrão), vamos conectar o Vulkan à janela mais tarde
         glfw.window_hint(GLFW_CONSTANTS.GLFW_CLIENT_API, GLFW_CONSTANTS.GLFW_NO_API)
         # Desabilita redimensionamento da janela para evitar quebra da swapchain
-        glfw.window_hint(GLFW_CONSTANTS.GLFW_RESIZABLE, GLFW_CONSTANTS.GLFW_TRUE)
+        glfw.window_hint(GLFW_CONSTANTS.GLFW_RESIZABLE, GLFW_CONSTANTS.GLFW_FALSE)
         
         # Cria a janela GLFW com as dimensões fornecidas
         self.window = glfw.create_window(width, height, glfw_title_name, None, None)
 
         # Verifica se a janela foi criada com sucesso
         if self.window is not None:
-            vklogging.logger.print(f"{OKGREEN}Foi criada com êxito uma janela glfw chamada {glfw_title_name}, largura: {width}, altura: {height}{RESET}\n")
+            if debugMode:
+                print(f"{OKGREEN}Foi criada com êxito uma janela glfw chamada {glfw_title_name}, largura: {width}, altura: {height}{RESET}\n")
         else:
-            vklogging.logger.print(f"{FAIL}Falha na criação da janela GLFW{RESET}\n")
+            if debugMode:
+                print(f"{FAIL}Falha na criação da janela GLFW{RESET}\n")
 
     def calculate_framerate(self):
 
@@ -67,7 +63,7 @@ class App:
             glfw.poll_events()
 
             # Chama o motor gráfico para renderizar a cena
-            self.graphicsEngine.render(self.scene)
+            self.graphicsEngine.render()
 
             # Calcula o framerate e atualiza a janela
             self.calculate_framerate()

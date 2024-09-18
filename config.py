@@ -21,15 +21,8 @@ from colors import *
 	Veremos isto mais tarde, quando tivermos criado uma instância e um dispositivo.
 """
 
-import glfw                             #usada para criar janelas, gerenciar entradas e eventos no contexto de OpenGL e Vulkan
-import glfw.GLFW as GLFW_CONSTANTS      #constantes úteis do GLFW para manipulação de teclas, janelas e outros eventos
-import numpy as np 						#descreve vetores
-import pyrr 							#constroi matrizes
-
-#----- Mesh Types ----#
-TRIANGLE = 0
-SQUARE = 1
-STAR = 2
+import glfw
+import glfw.GLFW as GLFW_CONSTANTS
 
 # PT-BR console
 import sys

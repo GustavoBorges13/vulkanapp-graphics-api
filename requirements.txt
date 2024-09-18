@@ -1,5 +1,2 @@
 vulkan
 glfw
-numpy
-pyrr
-pillow

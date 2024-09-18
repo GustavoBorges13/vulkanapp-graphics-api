@@ -1,24 +1,49 @@
 #version 450
 
-layout(location = 0) in vec2 vertexPosition;
-layout(location = 1) in vec3 vertexColor;
-layout(location = 2) in vec2 vertexTexCoord;
-
 layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexCoord;
 
-layout(set = 0, binding = 0) uniform UBO {
-	mat4 view;
-	mat4 projection;
-	mat4 viewProjection;
-} CameraData;
 
-layout (set = 0, binding = 1) readonly buffer StorageBuffer {
-	mat4 model[];
-} ObjectData;
+//triangulo posicao
+vec2 positions[3] = vec2[] (
+	vec2( 0.0,  -0.5),
+	vec2( 0.5,  0.5),
+	vec2(-0.5,  0.5)
+);
+
+/*
+//quadrado posicao
+vec2 positions[6] = vec2[] (
+    vec2(  0.5,  0.5), // Triângulo 1
+    vec2( -0.5,  0.5),
+    vec2( -0.5, -0.5),
+
+    vec2(  0.5,  0.5), // Triângulo 2
+    vec2( -0.5, -0.5),
+    vec2(  0.5, -0.5)
+);
+*/
+
+//triangulo cores
+vec3 colors[3] = vec3[] (
+	vec3(1.0, 0.0, 0.0),
+	vec3(0.0, 1.0, 0.0),
+	vec3(0.0, 0.0, 1.0)
+);
+
+/*
+//quadrado cores
+vec3 colors[6] = vec3[] (
+    vec3(1.0, 0.0, 0.0),
+    vec3(0.0, 1.0, 0.0),
+    vec3(0.0, 0.0, 1.0),
+
+    vec3(1.0, 0.0, 0.0),
+    vec3(0.0, 0.0, 1.0),
+    vec3(0.0, 1.0, 0.0)
+);
+*/
 
 void main() {
-	gl_Position = CameraData.viewProjection * ObjectData.model[gl_InstanceIndex] * vec4(vertexPosition, 0.0, 1.0);
-	fragColor = vertexColor;
-	fragTexCoord = vertexTexCoord;
+	gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
+	fragColor = colors[gl_VertexIndex];
 }
