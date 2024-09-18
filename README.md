@@ -10,7 +10,7 @@
 + Authors: Gustavo Silva, Danilo Dutra, Cláudio Evangelista, Matheus Araujo.
 # Work for the Computer Graphics course at the Federal University of Catalão (UFCAT), Goiás
 ```
-This project demonstrates how to draw a triangle on the screen using vertex and fragment shaders in 2D, leveraging the Vulkan API (using the Vulkan SDK provided by LunarG) and the Python language. The code includes all the necessary steps to render the triangle, making it a comprehensive and easy-to-understand example of 2D rendering based on Vulkan.<br><br>
+This project demonstrates how to create a window using GLFW and perform 3D rendering with the Vulkan API (using the Vulkan SDK provided by LunarG) written in python language. The code includes all the steps needed to render a rotating 3D cube, making it a comprehensive and easy-to-understand example of Vulkan-based rendering.<br><br>
 
 ## 🌟 Features 
 
@@ -221,7 +221,7 @@ For detailed Docker commands, see the [docker-commands.md](docker-commands.md) f
 
 ## 📖 Usage 
 
-Once the application is running, a window will open displaying a 2D triangle. The triangle will be rendered using vertex and fragment shaders, demonstrating basic 2D rendering with the Vulkan API.<br><br>
+Once the application is running, a window will open displaying a 3D cube. The cube will rotate indefinitely, demonstrating basic 3D rendering using the Vulkan API.<br><br>
 
 
 ## 🗂️ Project Structure 
@@ -244,7 +244,6 @@ Once the application is running, a window will open displaying a 2D triangle. Th
 ├── LICENSE                     # License file for the project
 ├── logging.py                  # Logging utilities - Validation Layers
 ├── main.py                     # Main application to launch program
-├── memory.py                   # Memory management for Vulkan
 ├── pipeline.py                 # Pipeline configuration and management
 ├── queue_families.py           # Queue families management for Vulkan
 ├── README.md                   # Project documentation and overview
