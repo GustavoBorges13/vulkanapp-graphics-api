@@ -2,8 +2,7 @@ from config import *
 import engine
 
 class App:
-
-
+    
     def __init__(self, width, height, glfw_title_name, debugMode):
 
         # Constrói a janela GLFW e inicializa a engine gráfica

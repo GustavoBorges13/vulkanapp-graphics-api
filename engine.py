@@ -38,7 +38,7 @@ class Engine:
         #cria uma instância do Vulkan, que é a base para qualquer aplicação Vulkan.
         self.instance = instance.make_instance(self.debugMode, self.glfw_title_name)
 
-        #se o modo de depuração estiver ativado, cria o mensageiro de depuração
+        #se o modo de depuração estiver ativado, cria o camada de validacao
         if self.debugMode:
             self.debugMessenger = logging.make_debug_messenger(self.instance)
 
@@ -70,7 +70,7 @@ class Engine:
         
 
         #envolve a gpu em um dispositivo logico para podermos nos comunicar com ele
-            #device.find_queue_families(self.physicalDevice, self.debugMode)
+        #device.find_queue_families(self.physicalDevice, self.debugMode)
         self.device = device.create_logical_device(
             self.physicalDevice, self.instance, self.surface, self.debugMode)
 
@@ -124,7 +124,7 @@ class Engine:
         #frame buffers
         framebufferInput = framebuffer.framebufferInput()
         framebufferInput.device = self.device
-        framebufferInput.renderpass = self.renderpass
+        framebufferInput.renderpass = self.renderpass # para escolher quais os frames que serao utilizados
         framebufferInput.swapchainExtent = self.swapchainExtent
         framebuffer.make_framebuffers(
             framebufferInput, self.swapchainFrames, self.debugMode
@@ -219,7 +219,7 @@ class Engine:
         vkQueuePresentKHR = vkGetDeviceProcAddr(self.device, 'vkQueuePresentKHR')
 
 
-        #verificar se o caminho esta aberto
+        #verificar se a cerca (caminho) esta aberta
         #verifica se a cerca (fence) está sinalizada, garantindo que o processamento do quadro anterior foi concluído.
         vkWaitForFences(
             device = self.device, fenceCount = 1, pFences = [self.inFlightFence,], 

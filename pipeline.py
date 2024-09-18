@@ -102,6 +102,13 @@ def create_graphics_pipeline(inputBundle, debug):
         vertexAttributeDescriptionCount=0
     )
 
+    # Configurar a topologia de entrada de vértices, aqui desenhando triângulos!!
+    inputAssembly = VkPipelineInputAssemblyStateCreateInfo(
+        sType=VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        primitiveRestartEnable=VK_FALSE #permite o “desmembramento” de topologias de faixas
+    )
+
     # Carregar e configurar o shader de vértices
     if (debug):
         print(f"{HEADER}Carregar módulo de sombreamento (shader module): {inputBundle.vertexFilepath}{RESET}")
@@ -113,12 +120,11 @@ def create_graphics_pipeline(inputBundle, debug):
             pName="main"
         )
 
-    # Configurar a topologia de entrada de vértices, aqui desenhando triângulos!!
-    inputAssembly = VkPipelineInputAssemblyStateCreateInfo(
-        sType=VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        topology=VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        primitiveRestartEnable=VK_FALSE #permite o “desmembramento” de topologias de faixas
-    )
+
+    #Tessellation -> tesselação (nao estamos usando)
+
+    #Geometry shader -> shader geometrico (nao estamos usando)
+    #Pega a saida do shader de tesselacao mas se tiver sem subdivisao pode obter infos extras...
 
     # Definir a área de visualização (viewport) e o recorte (scissor)
     viewport = VkViewport(
@@ -158,6 +164,10 @@ def create_graphics_pipeline(inputBundle, debug):
     )
 
     # Configurações de multisampling (desativado neste caso)
+    # melhora a qualidade visual das bordas dos objetos.
+    # suaviza transicoes entre pixel e elimita o efeito serrilhado (aliasing)
+    # que pode ocorrer quando linhas e bordas de objetos aparecem de forma
+    # abrupta e pixelizada.
     multisampling = VkPipelineMultisampleStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         sampleShadingEnable=VK_FALSE,
@@ -175,14 +185,17 @@ def create_graphics_pipeline(inputBundle, debug):
         pName="main"
     )
 
+    #shader vertex, geometry shader (se tiver usado), fragment shader : : em comum!
     shaderStages = [vertexShaderStageInfo, fragmentShaderStageInfo]
 
+
+    #Color blend em um anexo de cor especifico (Desativado para este caso)
     #combinação de cores, pegue a saída do fragment shader e incorpore-a ao pixel existente, se ele tiver sido definido.
-    # Configurações de blending para a cor (desativado neste caso)
     colorBlendAttachment = VkPipelineColorBlendAttachmentState(
         colorWriteMask=VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
         blendEnable=VK_FALSE #função sem blend
     )
+    #Color blending (desativado para este caso)
     colorBlending = VkPipelineColorBlendStateCreateInfo(
         sType=VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         logicOpEnable=VK_FALSE, #sem operações lógicas

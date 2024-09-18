@@ -239,7 +239,7 @@ def log_image_usage_bits(bits):
     """
 
     if (bits & VK_IMAGE_USAGE_TRANSFER_SRC_BIT):
-        result.append("transfer src: a imagem pode ser usada como a origem de um comando de transferência.")
+        result.append("transfer src: a imagem pode ser usada como a origem de um comando de transferência.\n")
     if (bits & VK_IMAGE_USAGE_TRANSFER_DST_BIT):
         result.append("transfer dst: a imagem pode ser usada como destino de um comando de transferência.")
     if (bits & VK_IMAGE_USAGE_SAMPLED_BIT):

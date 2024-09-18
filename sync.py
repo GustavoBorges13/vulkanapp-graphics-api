@@ -2,7 +2,7 @@ from config import *
 
 def make_semaphore(device, debug):
 
-     #cria as informações para o semáforo usando a estrutura VkSemaphoreCreateInfo
+    #cria as informações para o semáforo usando a estrutura VkSemaphoreCreateInfo
     semaphoreInfo = VkSemaphoreCreateInfo()
 
     try:
