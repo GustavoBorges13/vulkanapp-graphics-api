@@ -1,6 +1,8 @@
 from config import *
 import logging
 import queue_families  
+import tkinter as tk
+from tkinter import messagebox
 
 validationLayers = ["VK_LAYER_KHRONOS_validation"]
 
@@ -137,6 +139,8 @@ def create_logical_device(physicalDevice, instance, surface, debug):
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     ]
 
+
+
     createInfo = VkDeviceCreateInfo(
         queueCreateInfoCount = len(queueCreateInfo), 
         pQueueCreateInfos = queueCreateInfo,
@@ -147,6 +151,18 @@ def create_logical_device(physicalDevice, instance, surface, debug):
         ppEnabledLayerNames = enabledLayers
     )
 
+    """
+    # Cria uma janela oculta
+    root = tk.Tk()
+    root.withdraw()  # Esconde a janela principal
+
+    # Exibe a caixa de mensagem
+    messagebox.showinfo("TESTE", f"Resultado do createInfo: {createInfo}\nResultado do [createInfo,]: {[createInfo,]}")
+    print(f"Resultado do createInfo: {createInfo}\nResultado do [createInfo,]: {[createInfo,]}")
+    # Fecha o aplicativo após o fechamento da mensagem
+    root.destroy()
+    """
+
     # Se pegarmos algo "[createInfo,] e embrulharmos/wrapper em uma lista, a API do vulkan vai 
     # entender como um ponteiro"
     return vkCreateDevice(
@@ -154,7 +170,7 @@ def create_logical_device(physicalDevice, instance, surface, debug):
         pCreateInfo = [createInfo,], 
         pAllocator = None
     )
-   
+
 def get_queues(physicalDevice, logicalDevice, instance, surface, debug):
 
     indices = queue_families.find_queue_families(physicalDevice, instance, surface, debug)

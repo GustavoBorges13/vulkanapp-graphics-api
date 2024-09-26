@@ -44,6 +44,9 @@ class Engine:
 
         #criar a superfície de renderização a partir da janela GLFW.
         #a superfície permite que o Vulkan interaja com o sistema de janelas para desenhar na tela.
+        # O CFFI permite criar ponteiros e interagir com a API Vulkan em C. 
+        # Aqui, 'ffi.new("VkSurfaceKHR*")' aloca espaço para a superfície Vulkan em estilo C,
+        # permitindo que o Vulkan interaja com o sistema de janelas via GLFW.
         c_style_surface = ffi.new("VkSurfaceKHR*")
 
         #tenta criar a superfície da janela usando GLFW e vinculá-la à instância Vulkan.
@@ -293,8 +296,8 @@ class Engine:
             vkDestroyFramebuffer(
                 device = self.device, framebuffer = frame.framebuffer, pAllocator = None
             )
-        destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
-        destructionFunction(self.device, self.swapchain, None)
+       # destructionFunction = vkGetDeviceProcAddr(self.device, 'vkDestroySwapchainKHR')
+        #destructionFunction(self.device, self.swapchain, None)
         vkDestroyDevice(
             device = self.device, pAllocator = None
         )

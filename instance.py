@@ -79,7 +79,7 @@ def make_instance(debug, applicationName):
     Ou desça para uma versão anterior para garantir a compatibilidade com mais dispositivos
     VK_MAKE_API_VERSION(major, minor, patch)
     """
-    version = VK_MAKE_VERSION(1, 3, 0)
+    version = VK_MAKE_VERSION(1, 1, 0)
     
     """
         from _vulkan.py:
