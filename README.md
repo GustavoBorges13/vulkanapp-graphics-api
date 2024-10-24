@@ -12,6 +12,8 @@
 ```
 This project demonstrates how to draw a triangle on the screen using vertex and fragment shaders in 2D, leveraging the Vulkan API (using the Vulkan SDK provided by LunarG) and the Python language. The code includes all the necessary steps to render the triangle, making it a comprehensive and easy-to-understand example of 2D rendering based on Vulkan.<br><br>
 
+All credits to Professor Andrew for his teachings on YouTube [https://www.youtube.com/@GetIntoGameDev](https://www.youtube.com/@GetIntoGameDev)
+
 ## 🌟 Features 
 
 - **GLFW Window Creation**: Easily set up a window for rendering with Vulkan.
